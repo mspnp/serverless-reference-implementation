@@ -57,20 +57,23 @@
     },
     "functionAppUrlV2": {
       "type": "string",
+      "defaultValue": "",
       "metadata": {
-        "description": "Function app url"
+        "description": "Function app url V2"
       }
     },
     "functionAppNameV2": {
       "type": "string",
+      "defaultValue": "",
       "metadata": {
-        "description": "Function app name"
+        "description": "Function app name V2"
       }
     },
     "functionAppCodeV2": {
       "type": "securestring",
+      "defaultValue": "",
       "metadata": {
-        "description": "Function app code"
+        "description": "Function app code V2"
       }
     },
     "requireSubscription": {
@@ -84,12 +87,13 @@
   "variables": {
     "apiManagementServiceName": "[concat(resourceGroup().name,'-apim-', uniqueString(resourceGroup().id))]",
     "functionAppResourceIdV1": "[resourceId('Microsoft.Web/sites', parameters('functionAppNameV1'))]",
-    "functionAppResourceIdV2": "[resourceId('Microsoft.Web/sites', parameters('functionAppNameV2'))]",
+    "functionAppResourceIdV2": "[if(empty(parameters('functionAppNameV2')),'',resourceId('Microsoft.Web/sites', parameters('functionAppNameV2')))]",
     "xmlJsonEscapedPolicyV1": "<policies>\r\n    <inbound>\r\n        <base \/>\r\n        <rewrite-uri template=\"GetStatusFunction?deviceId={deviceid}\" \/>\r\n        <set-backend-service id=\"apim-generated-policy\" backend-id=\"dronestatusdotnet\" \/>\r\n   <\/inbound>\r\n    <backend>\r\n        <forward-request \/>\r\n<\/backend>\r\n    <outbound>\r\n        <base \/>\r\n    <\/outbound>\r\n    <on-error>\r\n        <base \/>\r\n    <\/on-error>\r\n<\/policies>",
     "xmlJsonEscapedPolicyV2": "<policies>\r\n    <inbound>\r\n        <base \/>\r\n        <rewrite-uri template=\"GetStatusFunction?deviceId={deviceid}\" \/>\r\n        <set-backend-service id=\"apim-generated-policy-v2\" backend-id=\"dronestatusnodejs\" \/>\r\n   <\/inbound>\r\n    <backend>\r\n        <forward-request \/>\r\n<\/backend>\r\n    <outbound>\r\n        <base \/>\r\n    <\/outbound>\r\n    <on-error>\r\n        <base \/>\r\n    <\/on-error>\r\n<\/policies>",
     "versionSetName": "dronestatusversionset",
     "versionSetId": "[concat('Microsoft.ApiManagement/service/',variables('apiManagementServiceName'),'/api-version-sets/',variables('versionSetName'))]",
-    "apiVersionSetId": "[concat('/api-version-sets/',variables('versionSetName'))]"
+    "apiVersionSetId": "[concat('/api-version-sets/',variables('versionSetName'))]",
+    "deployV2": "[if(empty(parameters('functionAppUrlV2')),'No','Yes')]"
   },
   "resources": [
     {
@@ -126,6 +130,7 @@
           }
       },
       {
+          "condition":"[equals(variables('deployV2'), 'Yes')]",
           "name": "getstatusv2functionapp-code",
           "type": "properties",
           "apiVersion": "2017-03-01",
@@ -165,6 +170,7 @@
           }
       },
       {
+          "condition":"[equals(variables('deployV2'), 'Yes')]",
           "name": "dronestatusnodejs",
           "type": "backends",
           "apiVersion": "2018-01-01",
@@ -173,7 +179,7 @@
             "[concat('Microsoft.ApiManagement/service/', variables('apiManagementServiceName'), '/properties/getstatusv2functionapp-code')]"
           ],
           "properties": {
-              "resourceId": "[concat('https://management.azure.com', variables('functionAppResourceIdV1'))]",
+              "resourceId": "[concat('https://management.azure.com', variables('functionAppResourceIdV2'))]",
               "credentials": {
                   "query": {
                       "code": [
@@ -258,6 +264,7 @@
           ]
         },
         {
+          "condition":"[equals(variables('deployV2'), 'Yes')]",
           "apiVersion": "2017-03-01",
           "type": "apis",
           "name": "dronedeliveryapiv2",
@@ -278,6 +285,7 @@
           },
           "resources": [
             {
+              "condition":"[equals(variables('deployV2'), 'Yes')]",
               "apiVersion": "2017-03-01",
               "type": "operations",
               "name": "dronestatusGET",
@@ -300,6 +308,7 @@
               },
               "resources": [
                 {
+                  "condition":"[equals(variables('deployV2'), 'Yes')]",
                   "apiVersion": "2017-03-01",
                   "type": "policies",
                   "name": "policy",
@@ -343,6 +352,7 @@
               ]
             },
             {
+              "condition":"[equals(variables('deployV2'), 'Yes')]",
               "apiVersion": "2017-03-01",
               "type": "apis",
               "name": "dronedeliveryapiv2",
