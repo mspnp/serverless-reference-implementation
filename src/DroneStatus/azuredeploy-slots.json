@@ -1,0 +1,194 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+    "parameters": {
+        "appName": {
+            "type": "string",
+            "maxLength": "11",
+            "metadata": {
+                "description": "The name for the function app. It must only contain characters and numbers, and be 11 chars long max."
+            }
+        },
+        "storageAccountType": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_ZRS",
+                "Standard_GRS",
+                "Standard_RAGRS"
+            ]
+        },
+        "slotName": {
+            "type": "string",
+            "defaultValue": "staging",
+            "allowedValues": [
+                "staging"
+            ]
+        }
+    },
+	"variables": {
+        "storageAccountName": "[toLower(concat(parameters('appName'), uniqueString(resourceGroup().id)))]",
+        "hostingPlanName": "[parameters('appName')]",
+        "functionAppName": "[concat(parameters('appName'), '-funcapp')]",
+        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "cosmosDatabaseAccount": "[toLower(concat(parameters('appName'), uniqueString(resourceGroup().id)))]",
+        "cosmosDbDatabase": "[toLower(concat(variables('cosmosDatabaseAccount'), '-db'))]",
+        "cosmosDBCollection": "[toLower(concat(variables('cosmosDbDatabase'), 'col'))]",
+        "appInsightsName": "[concat(parameters('appName'), uniqueString(resourceGroup().id))]"
+	},
+    "resources": [
+    {
+        "name": "[variables('storageAccountName')]",
+        "type": "Microsoft.Storage/storageAccounts",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2017-10-01",
+        "sku": {
+            "name": "[parameters('storageAccountType')]"
+        },
+        "dependsOn": [],
+        "tags": {
+            "displayName": "warmPathStorage"
+        },
+        "kind": "Storage",
+        "properties": {
+            "supportsHttpsTrafficOnly": true,
+            "encryption": {
+                "services": {
+                    "blob": {
+                        "enabled": true
+                    },
+                    "file": {
+                        "enabled": true
+                    }
+                },
+                "keySource": "Microsoft.Storage"
+            }
+        }
+    },
+    {
+        "type": "microsoft.insights/components",
+        "kind": "other",
+        "name": "[variables('appInsightsName')]",
+        "apiVersion": "2014-04-01",
+        "location": "[resourceGroup().location]",
+        "tags": {},
+        "scale": null,
+        "properties": {
+            "ApplicationId": "[variables('functionAppName')]"
+        },
+        "dependsOn": []
+    },
+    {
+        "type": "Microsoft.Web/serverfarms",
+        "apiVersion": "2015-04-01",
+        "name": "[variables('hostingPlanName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+            "name": "[variables('hostingPlanName')]",
+            "computeMode": "Dynamic",
+            "sku": "Dynamic"
+        }
+    },
+    {
+        "apiVersion": "2015-08-01",
+        "type": "Microsoft.Web/sites",
+        "name": "[variables('functionAppName')]",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "Function App"
+        },
+        "kind": "functionapp",
+        "dependsOn": [
+            "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+            "[concat('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDatabaseAccount'))]",
+            "[resourceId('microsoft.insights/components', variables('appInsightsName'))]"
+        ],
+        "properties": {
+            "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+            "siteConfig": {
+                "appSettings": [
+                    {
+                        "name": "AzureWebJobsStorage",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                    },
+                    {
+                        "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                    },
+                    {
+                        "name": "WEBSITE_CONTENTSHARE",
+                        "value": "[toLower(variables('functionAppName'))]"
+                    },
+                    {
+                        "name": "FUNCTIONS_EXTENSION_VERSION",
+                        "value": "~2"
+                    },
+                    {
+                        "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                        "value": "[reference(concat('microsoft.insights/components/', variables('appInsightsName'))).InstrumentationKey]"
+                    },
+                    {
+                        "name": "CosmosDBConnectionString",
+                        "value": "[concat('AccountEndpoint=',reference(concat('Microsoft.DocumentDb/databaseAccounts/',variables('cosmosDatabaseAccount'))).documentEndpoint,';AccountKey=',listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', variables('cosmosDatabaseAccount')), '2015-04-08').primaryMasterKey,';')]"
+                    },
+                    {
+                        "name": "CosmosDBEndpoint",
+                        "value": "[reference(concat('Microsoft.DocumentDb/databaseAccounts/',variables('cosmosDatabaseAccount'))).documentEndpoint]"
+                    },
+                    {
+                        "name": "CosmosDBKey",
+                        "value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', variables('cosmosDatabaseAccount')), '2015-04-08').primaryMasterKey]"
+                    },
+                    {
+                        "name": "CosmosDBDataBase",
+                        "value": "[variables('cosmosDBDataBase')]"
+                    },
+                    {
+                        "name": "CosmosDBCollection",
+                        "value": "[variables('cosmosDBCollection')]"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "type": "Microsoft.Web/sites/slots",
+        "kind": "functionapp",
+        "name": "[concat(variables('functionAppName'), '/', parameters('slotName'))]",
+        "apiVersion": "2016-08-01",
+        "location": "South Central US",
+        "scale": null,
+        "properties": {
+            "enabled": true,
+            "reserved": false,
+            "clientAffinityEnabled": true,
+            "clientCertEnabled": false,
+            "hostNamesDisabled": false,
+            "dailyMemoryTimeQuota": 0,
+            "cloningInfo": null
+        },
+        "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+            "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+        ]
+    },
+    {
+        "name": "[variables('cosmosDatabaseAccount')]",
+        "type": "Microsoft.DocumentDB/databaseAccounts",
+        "apiVersion": "2015-04-08",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "cosmosDB"
+        },
+        "kind": "GlobalDocumentDB",
+        "properties": {
+            "databaseAccountOfferType": "Standard"
+        }
+    }
+    ],
+	"outputs": {
+
+	}
+}

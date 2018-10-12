@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serverless.Serialization", "Serverless.Serialization\Serverless.Serialization.csproj", "{C5BA4F5D-550D-498C-B6CD-98F596A9340B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serverless.Serialization.Tests", "Serverless.Serialization.Tests\Serverless.Serialization.Tests.csproj", "{B37A876E-8D7B-4AD1-9E59-13F3A8A0E82B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5BA4F5D-550D-498C-B6CD-98F596A9340B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5BA4F5D-550D-498C-B6CD-98F596A9340B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5BA4F5D-550D-498C-B6CD-98F596A9340B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5BA4F5D-550D-498C-B6CD-98F596A9340B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B37A876E-8D7B-4AD1-9E59-13F3A8A0E82B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B37A876E-8D7B-4AD1-9E59-13F3A8A0E82B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B37A876E-8D7B-4AD1-9E59-13F3A8A0E82B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B37A876E-8D7B-4AD1-9E59-13F3A8A0E82B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A137F523-24D3-4A34-B330-8E652636080D}
+	EndGlobalSection
+EndGlobal

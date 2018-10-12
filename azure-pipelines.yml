@@ -1,0 +1,36 @@
+variables:
+  ServiceConnectionName: '<serviceconnection>'
+  Location: '<location>'
+  ResourceGroup: '<resourcegroup>'
+  AppName: '<appName>' # less or equal than 11 chars
+  DeployAzureResources: false
+  DeployableSourceBranch: 'refs/heads/staging'
+  SlotName: '<slotName>'
+
+name: $(Date:yyyyMMdd)$(Rev:.rr)
+
+trigger:
+  branches:
+    include:
+    - staging
+
+    - feature/* # ci-only
+
+resources:
+- repo: self
+
+jobs:
+
+# CI
+- job: dronestatusjobci
+  displayName: "Drone Status CI"
+  steps:
+  - template: ./src/DroneStatus/azure-pipelines-ci.yml
+
+# CD
+- job: dronestatuscd
+  dependsOn: dronestatusjobci
+  condition: and(succeeded('dronestatusjobci'), eq(variables['build.sourceBranch'], variables['DeployableSourceBranch']))
+  displayName: "Drone Status CD"
+  steps:
+  - template: ./src/DroneStatus/azure-pipelines-cd.yml

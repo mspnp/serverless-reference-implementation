@@ -1,0 +1,51 @@
+steps:
+
+# Restore
+- task: DotNetCoreCLI@2
+  displayName: Restore
+  inputs:
+    command: restore
+
+    projects: '**/DroneStatus/dotnet/**/*.csproj'
+
+# Build
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    projects: '**/DroneStatus/dotnet/**/*.csproj'
+
+    arguments: '--configuration $(BuildConfiguration)'
+
+# Run tests
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+
+    projects: '**/DroneStatus/dotnet/**.Tests/*.csproj'
+
+    publishTestResults: true
+
+    arguments: '--configuration $(BuildConfiguration)'
+
+  enabled: true
+
+# Publish
+- task: DotNetCoreCLI@2
+  displayName: Publish
+  inputs:
+    command: publish
+
+    publishWebProjects: false
+
+    projects: '**/DroneStatus/dotnet/DroneStatusFunctionApp/*.csproj'
+
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+
+    zipAfterPublish: True
+
+# Publish Artifacts
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'

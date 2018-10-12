@@ -1,0 +1,29 @@
+{
+  "disabled": false,
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get"
+      ]
+    },
+    {
+      "name": "res",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "type": "cosmosDB",
+      "name": "getStatusById",
+      "databaseName": "%COSMOSDB_DATABASE_NAME%",
+      "collectionName": "%COSMOSDB_DATABASE_COL%",
+      "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
+      "direction": "in",
+      "id": "{Query.deviceId}",
+      "partitionKey": "{Query.deviceId}"
+    }
+  ]
+}

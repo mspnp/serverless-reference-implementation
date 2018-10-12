@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serverless.Simulator", "Serverless.Simulator\Serverless.Simulator.csproj", "{EDDEE308-2694-4904-A56A-BE93B0874501}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelemetrySerialization", "..\TelemetrySerialization\Serverless.Serialization\Serverless.Serialization.csproj", "{208CE5A2-7BD4-44D3-9753-193C88ED24E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EDDEE308-2694-4904-A56A-BE93B0874501}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDDEE308-2694-4904-A56A-BE93B0874501}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDDEE308-2694-4904-A56A-BE93B0874501}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDDEE308-2694-4904-A56A-BE93B0874501}.Release|Any CPU.Build.0 = Release|Any CPU
+		{208CE5A2-7BD4-44D3-9753-193C88ED24E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{208CE5A2-7BD4-44D3-9753-193C88ED24E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{208CE5A2-7BD4-44D3-9753-193C88ED24E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{208CE5A2-7BD4-44D3-9753-193C88ED24E1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20335466-F28D-4B7D-96F2-6A8F6FFE2A39}
+	EndGlobalSection
+EndGlobal
