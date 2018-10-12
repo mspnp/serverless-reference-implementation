@@ -72,7 +72,7 @@ export APIM_GATEWAY_URL=$(az group deployment show \
                                     -o tsv)
 ```
 
-## step 7
+## step 8
 
 ```bash
 # test dronestatus v1 and v2 via APIM
