@@ -152,10 +152,6 @@ namespace DroneStatusFunction.Tests
                 });
 
             var logger = new MockLogger();
-            var repository = new Mock<IDeviceStatusRepository>();
-            repository.Setup(r => r.GetStatusDocumentAsync("device1", It.IsAny<ILogger>()))
-                .ReturnsAsync((Document)null);
-            GetStatusFunction.Repository = repository.Object;
 
             var result = await GetStatusFunction.Run(request.Object, null, logger);
 
