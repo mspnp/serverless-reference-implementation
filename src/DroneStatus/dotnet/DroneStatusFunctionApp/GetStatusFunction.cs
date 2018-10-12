@@ -36,7 +36,5 @@ namespace DroneStatusFunctionApp
                 },
                 log);
         }
-
-        public static IDeviceStatusRepository Repository { get; set; }
     }
 }
