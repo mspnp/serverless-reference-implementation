@@ -15,6 +15,8 @@
         public const int SimulatedDelayBetweenMessages = 1000;
         private static CancellationTokenSource cts;
 
+        private const string DevicesPrefix = "drone-";
+
         private static async Task GenerateTelemetryAsync<T>(Func<T, string, bool, T> factory,
             ObjectPool<EventHubClient> pool, TelemetrySerializer<T> serializer, int randomSeed, AsyncConsole console, int generateKeyframeGap, int simulatedDelayInMs, int waittime, string deviceId) where T : class
         {
@@ -166,7 +168,6 @@
         private static (string EventHubConnectionString,
             int MillisecondsToRun, int GenerateKeyframeGap, int NumberOfDevices) ParseArguments()
         {
-
             var eventHubConnectionString = Environment.GetEnvironmentVariable("EVENT_HUB_CONNECTION_STRING");
             var numberOfMillisecondsToRun = (int.TryParse(Environment.GetEnvironmentVariable("SECONDS_TO_RUN"), out int outputSecondToRun) ? outputSecondToRun : 0) * 1000;
             var generateKeyframeGap = int.TryParse(Environment.GetEnvironmentVariable("GENERATE_KEYFRAME_GAP"), out int genKeyframeGap) ? genKeyframeGap : 100;
@@ -241,17 +242,12 @@
 
                 var eventHubClientPool = new ObjectPool<EventHubClient>(() => EventHubClient.CreateFromConnectionString(EventHubConnectionString), 100);
 
-                var deviceIds = new string[NumberOfDevices];
+                var tasks = new List<Task>();
                 for (int i = 0; i < NumberOfDevices; i++)
                 {
-                    deviceIds[i] = Guid.NewGuid().ToString();
+                    tasks.Add(GenerateTelemetryAsync(TelemetryGenerator.GetTimeElapsedTelemetry, eventHubClientPool, new TelemetrySerializer<DroneState>(), 100, console, GenerateKeyframeGap, SimulatedDelayBetweenMessages, 1000, DevicesPrefix+i));
                 }
 
-                var tasks = new List<Task>();
-                foreach (var deviceId in deviceIds)
-                {
-                    tasks.Add(GenerateTelemetryAsync(TelemetryGenerator.GetTimeElapsedTelemetry, eventHubClientPool, new TelemetrySerializer<DroneState>(), 100, console, GenerateKeyframeGap, SimulatedDelayBetweenMessages, 1000, deviceId));
-                }
                 tasks.Add(console.WriterTask);
 
                 await Task.WhenAll(tasks.ToArray());
