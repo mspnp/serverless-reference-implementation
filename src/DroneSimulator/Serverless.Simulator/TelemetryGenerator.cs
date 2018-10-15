@@ -30,42 +30,32 @@ namespace Serverless.Simulator
 
         public static DroneState GetTimeElapsedTelemetry(DroneState previousState, string deviceId, bool keyFrame = false)
         {
-
             if (previousState == null)
             {
                 return GetFirstFrame(deviceId);
             }
 
-            DroneState state = null;
+            var droneState = new DroneState()
+            {
+                DeviceId = deviceId,
+                IsKeyFrame = keyFrame
+            };
+
+            // If keyframe, initialize additional properties
             if (keyFrame)
             {
+                droneState.Battery = Math.Round(VaryCondition((double)previousState.Battery.Value, BatteryVariation, MinimumBatteryLevel, (double)previousState.Battery.Value), 2);
+                droneState.FlightMode = (DroneFlightMode)flightModeCycle;
+                droneState.Health = (randomizer.Next(100) < 50, randomizer.Next(100) > 50, randomizer.Next(100) < 50);
+
                 // Between -1.5 and 1.5 miles around start location
                 var distance = Math.Round(VaryCondition(0.05, 2500, -1.5, 1.5), 2);
-                state = new DroneState()
-                {
-                    // On change device generate new device id
-                    DeviceId = deviceId,
-
-                    // On change device reset battery to 100%
-                    Battery = Math.Round(VaryCondition((double)previousState.Battery.Value, BatteryVariation, MinimumBatteryLevel, (double)previousState.Battery.Value), 2),
-                    FlightMode = (DroneFlightMode)flightModeCycle,
-                    Position = VaryLocation(previousState.Position.Value.Latitude, previousState.Position.Value.Longitude, distance),
-                    Health = (randomizer.Next(100) < 50, randomizer.Next(100) > 50, randomizer.Next(100) < 50),
-                    IsKeyFrame = keyFrame
-                };
+                droneState.Position = VaryLocation(previousState.Position.Value.Latitude, previousState.Position.Value.Longitude, distance);
 
                 if (++flightModeCycle > FlightModeSize) flightModeCycle = 0;
             }
-            else
-            {
-                state = new DroneState()
-                {
-                    DeviceId = deviceId,
-                    IsKeyFrame = keyFrame
-                };
-            }
 
-            return state;
+            return droneState;
         }
 
         private static double VaryCondition(double avg, double percentage, double min, double max)
