@@ -25,6 +25,24 @@
             "allowedValues": [
                 "staging"
             ]
+        },
+        "appInsightsLocation": {
+            "type": "string",
+            "metadata": {
+              "description": "Location to deploy Application Insights"
+            }
+        },
+        "cosmosDatabaseName": {
+            "type": "string",
+            "metadata": {
+              "description": "Cosmos DB daatabase name"
+            }
+        },
+        "cosmosDatabaseCollection": {
+            "type": "string",
+            "metadata": {
+              "description": "Cosmos DB collection name"
+            }
         }
     },
 	"variables": {
@@ -32,17 +50,15 @@
         "droneTelemetryStorageAccountName": "[toLower(concat(parameters('appName'),'dt', uniqueString(resourceGroup().id)))]",
         "droneTelemetryDeadLetterStorageQueueAccountName": "[toLower(concat(parameters('appName'),'dtq',uniqueString(resourceGroup().id)))]",
         "hostingPlanName": "[parameters('appName')]",
-        "droneStatusFunctionAppName": "[concat(parameters('appName'),'-ds-funcapp')]",
-        "droneTelemetryFunctionAppName": "[concat(parameters('appName'),'-dt-funcapp')]",
+        "droneStatusFunctionAppName": "[concat(parameters('appName'),uniqueString(resourceGroup().id),'-dronestatus')]",
+        "droneTelemetryFunctionAppName": "[concat(parameters('appName'),uniqueString(resourceGroup().id),'-dronetelemetry')]",
         "droneStatusStorageAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('droneStatusStorageAccountName'))]",
         "droneTelemetryStorageAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('droneTelemetryStorageAccountName'))]",
         "droneTelemetryDeadLetterStorageQueueAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('droneTelemetryDeadLetterStorageQueueAccountName'))]",
         "droneStatusAppInsightsName": "[concat(parameters('appName'), uniqueString(resourceGroup().id),'-ds-ai')]",
         "droneTelemetryAppInsightsName": "[concat(parameters('appName'), uniqueString(resourceGroup().id),'-dt-ai')]",
         "cosmosDatabaseAccount": "[toLower(concat(parameters('appName'), uniqueString(resourceGroup().id)))]",
-        "cosmosDatabaseName": "[toLower(concat(variables('cosmosDatabaseAccount'), '-db'))]",
-        "cosmosDatabaseCollection": "[toLower(concat(variables('cosmosDatabaseName'), '-col'))]",
-        "eventHubNameSpaceName": "[concat(parameters('appName'),'-ns')]",
+        "eventHubNameSpaceName": "[concat(parameters('appName'),uniqueString(resourceGroup().id),'-ns')]",
         "eventHubName": "[concat(parameters('appName'),'-eh')]",
         "eventHubId": "[concat('Microsoft.EventHub/namespaces/', variables('eventHubNamespaceName'), '/EventHubs/',variables('eventHubName'))]",
         "eventHubConsumerGroup": "dronetelemetry",
@@ -140,7 +156,7 @@
         "kind": "other",
         "name": "[variables('droneStatusAppInsightsName')]",
         "apiVersion": "2014-04-01",
-        "location": "[resourceGroup().location]",
+        "location": "[parameters('appInsightsLocation')]",
         "tags": {},
         "scale": null,
         "properties": {
@@ -153,7 +169,7 @@
         "kind": "other",
         "name": "[variables('droneTelemetryAppInsightsName')]",
         "apiVersion": "2014-04-01",
-        "location": "[resourceGroup().location]",
+        "location": "[parameters('appInsightsLocation')]",
         "tags": {},
         "scale": null,
         "properties": {
@@ -238,11 +254,11 @@
                     },
                     {
                         "name": "COSMOSDB_DATABASE_NAME",
-                        "value": "[variables('cosmosDatabaseName')]"
+                        "value": "[parameters('cosmosDatabaseName')]"
                     },
                     {
                         "name": "COSMOSDB_DATABASE_COL",
-                        "value": "[variables('cosmosDatabaseCollection')]"
+                        "value": "[parameters('cosmosDatabaseCollection')]"
                     }
                 ]
             }
@@ -404,11 +420,11 @@
                     },
                     {
                         "name": "COSMOSDB_DATABASE_NAME",
-                        "value": "[variables('cosmosDatabaseName')]"
+                        "value": "[parameters('cosmosDatabaseName')]"
                     },
                     {
                         "name": "COSMOSDB_DATABASE_COL",
-                        "value": "[variables('cosmosDatabaseCollection')]"
+                        "value": "[parameters('cosmosDatabaseCollection')]"
                     },
                     {
                         "name": "EventHubConnection",
@@ -436,13 +452,13 @@
             "type": "string",
             "value": "[variables('cosmosDatabaseAccount')]"
         },
-        "cosmosDatabaseName": {
+        "droneStatusFunctionAppName": {
             "type": "string",
-            "value": "[variables('cosmosDatabaseName')]"
+            "value": "[variables('droneStatusFunctionAppName')]"
         },
-        "cosmosDatabaseCollection": {
+        "droneTelemetryFunctionAppName": {
             "type": "string",
-            "value": "[variables('cosmosDatabaseCollection')]"
+            "value": "[variables('droneTelemetryFunctionAppName')]"
         }
     }
 }
