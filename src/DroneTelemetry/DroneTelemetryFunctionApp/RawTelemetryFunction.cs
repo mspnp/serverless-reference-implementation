@@ -30,8 +30,8 @@ namespace DroneTelemetryFunctionApp
 
         private static readonly string CosmosDBEndpoint = GetEnvironmentVariable("CosmosDBEndpoint");
         private static readonly string CosmosDBKey = GetEnvironmentVariable("CosmosDBKey");
-        private static readonly string CosmosDBDatabase = GetEnvironmentVariable("CosmosDBDatabase");
-        private static readonly string CosmosDBCollection = GetEnvironmentVariable("CosmosDBCollection");
+        private static readonly string CosmosDBDatabase = GetEnvironmentVariable("COSMOSDB_DATABASE_NAME");
+        private static readonly string CosmosDBCollection = GetEnvironmentVariable("COSMOSDB_DATABASE_COL");
 
         private static string key = TelemetryConfiguration.Active.InstrumentationKey =
                                             GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
