@@ -78,3 +78,17 @@ export FUNCTIONAPP_KEY_V2=<function-key>
 > rovokable specific key.
 > By the time writing this, azure function key management using ARM is problematic.
 > For more information please refer to https://github.com/Azure/azure-functions-host/wiki/Changes-to-Key-Management-in-Functions-V2#arm-impact
+
+## step 7
+
+1. In the Azure Portal, navigate to the drone status v2 function.
+2. Select **Platform features**
+3. Click **Authentication / Authorization**
+4. Toggle App Service Authentication to **On**.
+5. Click **Azure Active Directory**.
+6. In the **Azure Active Directory Settings** blade, select **Express**, click the default **Select Existing AD App**.
+7. Click **Azure AD App**, select the application created for v1 in the list, and click **OK**.
+7. Click **OK**.
+8. Click **Save**.
+
+> Note: for this example, both versions of the function will represent the same resource so they will share the AAD application id. Tokens retrieved to access the API will work for both versions.
