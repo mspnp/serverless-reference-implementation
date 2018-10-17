@@ -6,6 +6,7 @@
         tenant: '<Azure AD tenant name>',
         clientId: '<application id>',
         postLogoutRedirectUri: window.location.origin,
+        apiId: '<api application id>',
         apiUrl: '<URL of the API Management API endpoint>'
     };
     var authContext = new AuthenticationContext(config);
@@ -69,7 +70,7 @@
         $loading.show();
 
         // Acquire Token for Backend
-        authContext.acquireToken(authContext.config.clientId, function (error, token) {
+        authContext.acquireToken(authContext.config.apiId, function (error, token) {
 
             // Handle ADAL Error
             if (error || !token) {
