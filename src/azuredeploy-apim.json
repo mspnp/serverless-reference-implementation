@@ -4,6 +4,7 @@
   "parameters": {
     "publisherEmail": {
       "type": "string",
+      "defaultValue": "drones@contoso.com",
       "minLength": 1,
       "metadata": {
         "description": "The email address of the owner of the service"
@@ -11,6 +12,7 @@
     },
     "publisherName": {
       "type": "string",
+      "defaultValue": "contoso",
       "minLength": 1,
       "metadata": {
         "description": "The name of the owner of the service"

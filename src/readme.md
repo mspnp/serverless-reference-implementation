@@ -1,86 +1,167 @@
-# Drone Delivery API Managment
+# Deploy the Drone Delivery Serverless App
 
-## step 1
+## Prerequisites
+
+- [.NET Core 2.1](https://www.microsoft.com/net/download)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
+
+
+Clone or download this repo locally.
 
 ```bash
-# export the following environment variables
+git clone https://github.com/mspnp/serverless-reference-implementation.git
+cd serverless-reference-implementation/src
+```
+
+## Deploy Azure resources
+
+Export the following environment variables:
+
+``` bash
 export LOCATION=<location>
 export RESOURCEGROUP=<resource-group>
+export APPNAME=<functionapp-name> # Cannot be more than 8 characters
+export APP_INSIGHTS_LOCATION=<application-insights-location>
+export COSMOSDB_DATABASE_NAME=${APPNAME}-db
+export COSMOSDB_DATABASE_COL=${APPNAME}-col
 ```
 
-## step 2
+Create a resource group.
 
 ```bash
-# create resource group
-az group create \
-   -n $RESOURCEGROUP \
-   -l $LOCATION
+az group create -n $RESOURCEGROUP -l $LOCATION
 ```
 
-## step 3
-
-follow the instruction to deploy the [backend function apps](./readme-backend-functionapps.md)
-
-## step 4
-
-optionally it is possible to have backend versions side by side of drone status
-by [deploying a v2](./readme-backend-functionapps-v2.md) or please feel free to skip this step for now.
-
-## step 5
+Deploy Azure resources.
 
 ```bash
-# export the following environment variables for the drone status function app. FUNCTIONAPP_KEY may already be set by the previous step.
-
-export FUNCTIONAPP_NAME_V1=<drone-status-functionapp-name-v1>
-export FUNCTIONAPP_KEY_V1=<drone-status-function-key-v1> # please note you should have exported this in step 3
-
-export FUNCTIONAPP_URL_V1="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${FUNCTIONAPP_NAME_V1} --query defaultHostName -o tsv)/api"
-
-# optionally export the following environment variables for drone status v2 function app if you have completed step 4
-
-export FUNCTIONAPP_NAME_V2=<drone-status-functionapp-name-v2>
-export FUNCTIONAPP_KEY_V2=<drone-status-function-key-v2> # please note you should have exported this in step 4
-
-export FUNCTIONAPP_URL_V2="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${FUNCTIONAPP_NAME_V2} --query defaultHostName -o tsv)/api"
+az group deployment create \
+   -g ${RESOURCEGROUP} \
+   --template-file azuredeploy-backend-functionapps.json \
+   --parameters appName=${APPNAME} \
+   appInsightsLocation=${APP_INSIGHTS_LOCATION} \
+   cosmosDatabaseName=${COSMOSDB_DATABASE_NAME} \
+   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
 ```
 
-> Note: Ideally, this function key shound't be shared, and only used by Azure API Managment
-
-## step 6
+Create Cosmos DB database and collection.
 
 ```bash
-# create apim
+# Get the Cosmos DB account name from the deployment output
+export COSMOSDB_DATABASE_ACCOUNT=$(az group deployment show \
+                                    -g ${RESOURCEGROUP} \
+                                    -n azuredeploy-backend-functionapps \
+                                    --query properties.outputs.cosmosDatabaseAccount.value \
+                                    -o tsv) 
+
+# Create the Cosmos DB database
+az cosmosdb database create \
+   -g $RESOURCEGROUP \
+   -n $COSMOSDB_DATABASE_ACCOUNT \
+   -d $COSMOSDB_DATABASE_NAME
+
+# Create the collection
+az cosmosdb collection create \
+   -g $RESOURCEGROUP \
+   -n $COSMOSDB_DATABASE_ACCOUNT \
+   -d $COSMOSDB_DATABASE_NAME \
+   -c $COSMOSDB_DATABASE_COL \
+   --partition-key-path /id --throughput 10000
+```
+
+## Publish Azure Function Apps
+
+Deploy the drone status function
+
+```bash
+## Get the functiona app name from the deployment output
+export DRONE_STATUS_FUNCTION_APP_NAME=$(az group deployment show \
+                                    -g ${RESOURCEGROUP} \
+                                    -n azuredeploy-backend-functionapps \
+                                    --query properties.outputs.droneStatusFunctionAppName.value \
+                                    -o tsv) 
+
+# Publish the function to a local directory
+dotnet publish DroneStatus/dotnet/DroneStatusFunctionApp/ \
+       --configuration Release \
+       --output ./../../../dronestatus-publish
+(cd dronestatus-publish && zip -r DroneStatusFunction.zip *)
+
+# Alternatively, if you have Microsoft Visual Studio installed:
+# dotnet publish /p:PublishProfile=Azure /p:Configuration=Release
+
+# Deploy the function to the function app
+az functionapp deployment source config-zip \
+   --src dronestatus-publish/DroneStatusFunction.zip \
+   -g $RESOURCEGROUP \
+   -n ${DRONE_STATUS_FUNCTION_APP_NAME}
+```
+
+Deploy the drone telemetry function
+
+```bash
+## Get the functiona app name from the deployment output
+export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az group deployment show \
+                                    -g ${RESOURCEGROUP} \
+                                    -n azuredeploy-backend-functionapps \
+                                    --query properties.outputs.droneTelemetryFunctionAppName.value \
+                                    -o tsv) 
+
+# Publish the function to a local directory
+dotnet publish DroneTelemetry/DroneTelemetryFunctionApp/ \
+       --configuration Release \
+       --output ./../../dronetelemetry-publish
+(cd dronetelemetry-publish && zip -r DroneTelemetryFunction.zip *)
+
+# Alternatively, if you have Microsoft Visual Studio installed:
+##dotnet publish /p:PublishProfile=Azure /p:Configuration=Release
+
+# Deploy the function to the function app
+az functionapp deployment source config-zip \
+   --src dronetelemetry-publish/DroneTelemetryFunction.zip \
+   -g $RESOURCEGROUP \
+   -n ${DRONE_TELEMETRY_FUNCTION_APP_NAME}
+```
+
+## Deploy the API Management gateway
+
+Get the function key for the DroneStatus function. 
+
+1. Open the Azure portal
+2. Navigate to the resource group and open the blade for the DroneStatus function
+3. Click **Manage**.
+4. Under **Function Keys**, click **Copy**
+
+Deploy API Management
+
+```bash
+export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
+
+export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
+
 az group deployment create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-apim.json \
-   --parameters functionAppNameV1=${FUNCTIONAPP_NAME_V1} \
-           functionAppCodeV1=${FUNCTIONAPP_KEY_V1} \
-           functionAppUrlV1=${FUNCTIONAPP_URL_V1} \
-           functionAppNameV2=${FUNCTIONAPP_NAME_V2} \
-           functionAppCodeV2=${FUNCTIONAPP_KEY_V2} \
-           functionAppUrlV2=${FUNCTIONAPP_URL_V2}
+   --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
+           functionAppCodeV1=${FUNCTIONAPP_KEY} \
+           functionAppUrlV1=${FUNCTIONAPP_URL} 
 ```
 
-## step 7
+## Build and run the device simulator
 
 ```bash
-# get apim gateway url
-export APIM_GATEWAY_URL=$(az group deployment show \
-                                    -g ${RESOURCEGROUP} \
-                                    -n azuredeploy-apim \
-                                    --query properties.outputs.apimGatewayURL.value \
-                                    -o tsv)
+export EVENT_HUB_CONNECTION_STRING=<event-hub-connection-string> # Use the 'send' authorization rule
+export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
+
+dotnet build $SIMULATOR_PROJECT_PATH
+dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
-## step 8
+## Deploy the single-page web app
 
-```bash
-# test dronestatus v1 and v2 via APIM
-curl GET "${APIM_GATEWAY_URL}/api/v1/dronestatus/{deviceid}" && \
-curl GET "${APIM_GATEWAY_URL}/api/v2/dronestatus/{deviceid}"
-```
+Follow the instructions [here](./ClientApp/readme.md) to deploy the SPA.
 
-## step 9
+Next, update the policies in the API Management gateway:
 
 1. In the Azure Portal, navigate to your API Management instance.
 2. Click **APIs** and select the GetStatus API.
@@ -115,3 +196,52 @@ curl GET "${APIM_GATEWAY_URL}/api/v2/dronestatus/{deviceid}"
     ```
 7. Click **Save**.
 8. Repeat for v2
+
+
+## Enable authentication
+
+## step 9
+
+1. In the Azure Portal, navigate to the drone status function.
+2. Select **Platform features**
+3. Click **Authentication / Authorization**
+4. Toggle App Service Authentication to **On**.
+5. Click **Azure Active Directory**.
+6. In the **Azure Active Directory Settings** blade, select **Express**, leave the default **Create New AD App**.
+7. Click **OK**.
+8. Click **Save**.
+
+## step 10
+
+1. In the Azure Portal, navigate to your Azure AD tenant.
+2. Click on **App registrations**.
+3. View all applications, and select the drone API application.
+4. From the application blade, click **Manifest** to open the inline manifest editor.
+5. Define a "GetStatus" role for the app by adding the following entry in the "appRoles" array in the manifest (replacing the placeholder GUID with a new GUID)
+
+    ```json
+    {
+    "allowedMemberTypes": [ "User" ],
+    "description":"Access to device status",
+    "displayName":"Get Device Status",
+    "id": "[generate a new GUID]",
+    "isEnabled":true,
+    "value":"GetStatus"
+    }
+    ```
+6. Click **Save**.
+
+## step 11
+
+1. In the Azure Portal, navigate to your Azure AD tenant.
+2. Click on **Enterprise Applications** and then click on the Drone Status application name.
+2. Click **Users and groups**.
+3. Click **Users**, select a user, and click **Select**.
+
+    > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
+
+4. Click **Assign**.
+
+## (Optional) Deploy v2 of GetStatus API
+
+Optionally, it is possible to have backend versions side by side of drone status by [deploying a v2](./readme-backend-functionapps-v2.md).
