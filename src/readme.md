@@ -20,7 +20,7 @@ Export the following environment variables:
 ``` bash
 export LOCATION=<location>
 export RESOURCEGROUP=<resource-group>
-export APPNAME=<functionapp-name> # Cannot be more than 8 characters
+export APPNAME=<functionapp-name> # Cannot be more than 6 characters
 export APP_INSIGHTS_LOCATION=<application-insights-location>
 export COSMOSDB_DATABASE_NAME=${APPNAME}-db
 export COSMOSDB_DATABASE_COL=${APPNAME}-col

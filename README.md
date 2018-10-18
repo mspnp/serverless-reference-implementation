@@ -19,7 +19,7 @@ add CICD to Drone Status using Azure Pipelines with YAML and Azure Functions Slo
 export SERVICECONNECTION=<serviceconnectionname>
 export LOCATION=<location>
 export RESOURCEGROUP=<resourcegroup>
-export APPNAME=<appName> # less or equal than 8 chars
+export APPNAME=<appName> # less or equal than 6 chars
 export SLOTNAME=<slotName>
 ```
 
