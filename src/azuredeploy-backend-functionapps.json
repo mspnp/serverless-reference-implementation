@@ -4,9 +4,9 @@
     "parameters": {
         "appName": {
             "type": "string",
-            "maxLength": 8,
+            "maxLength": 6,
             "metadata": {
-                "description": "The name for the function app. It must only contain characters and numbers, and be 11 chars long max."
+                "description": "The name for the function app. It must only contain characters and numbers, and be 6 chars long max."
             }
         },
         "storageAccountType": {

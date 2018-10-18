@@ -113,3 +113,45 @@ az functionapp deployment source config-zip \
    -g $RESOURCEGROUP \
    -n ${APPNAME}-dt-funcapp
 ```
+
+## step 9
+
+1. In the Azure Portal, navigate to the drone status function.
+2. Select **Platform features**
+3. Click **Authentication / Authorization**
+4. Toggle App Service Authentication to **On**.
+5. Click **Azure Active Directory**.
+6. In the **Azure Active Directory Settings** blade, select **Express**, leave the default **Create New AD App**.
+7. Click **OK**.
+8. Click **Save**.
+
+## step 10
+
+1. In the Azure Portal, navigate to your Azure AD tenant.
+2. Click on **App registrations**.
+3. View all applications, and select the drone API application.
+4. From the application blade, click **Manifest** to open the inline manifest editor.
+5. Define a "GetStatus" role for the app by adding the following entry in the "appRoles" array in the manifest (replacing the placeholder GUID with a new GUID)
+
+    ```json
+    {
+    "allowedMemberTypes": [ "User" ],
+    "description":"Access to device status",
+    "displayName":"Get Device Status",
+    "id": "[generate a new GUID]",
+    "isEnabled":true,
+    "value":"GetStatus"
+    }
+    ```
+6. Click **Save**.
+
+## step 11
+
+1. In the Azure Portal, navigate to your Azure AD tenant.
+2. Click on **Enterprise Applications** and then click on the Drone Status application name.
+2. Click **Users and groups**.
+3. Click **Users**, select a user, and click **Select**.
+
+    > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
+
+4. Click **Assign**.

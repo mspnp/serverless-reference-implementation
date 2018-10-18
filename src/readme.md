@@ -79,3 +79,39 @@ export APIM_GATEWAY_URL=$(az group deployment show \
 curl GET "${APIM_GATEWAY_URL}/api/v1/dronestatus/{deviceid}" && \
 curl GET "${APIM_GATEWAY_URL}/api/v2/dronestatus/{deviceid}"
 ```
+
+## step 9
+
+1. In the Azure Portal, navigate to your API Management instance.
+2. Click **APIs** and select the GetStatus API.
+3. Click v1
+4. Click **Design**.
+5. Click the **&lt;/&gt;** icon next to **Policies**.
+6. Paste in the following policy definitions:
+
+    ```xml
+    <inbound>
+        <base />
+        <cors allow-credentials="true">
+            <allowed-origins>
+                <origin>[Client website URL]</origin>
+            </allowed-origins>
+            <allowed-methods>
+                <method>GET</method>
+            </allowed-methods>
+            <allowed-headers>
+                <header>*</header>
+            </allowed-headers>
+        </cors>
+        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
+            <openid-config url="https://login.microsoftonline.com/[Azure AD directory ID]/.well-known/openid-configuration" />
+            <required-claims>
+                <claim name="aud">
+                    <value>[API Application ID]</value>
+                </claim>
+            </required-claims>
+        </validate-jwt>
+    </inbound>
+    ```
+7. Click **Save**.
+8. Repeat for v2
