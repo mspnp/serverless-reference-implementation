@@ -5,6 +5,14 @@
 - [.NET Core 2.1](https://www.microsoft.com/net/download)
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
 
+
+Clone or download this repo locally.
+
+```bash
+git clone https://github.com/mspnp/serverless-reference-implementation.git
+cd serverless-reference-implementation/src
+```
+
 ## Deploy Azure resources
 
 Export the following environment variables:
@@ -13,7 +21,7 @@ Export the following environment variables:
 export LOCATION=<location>
 export RESOURCEGROUP=<resource-group>
 export APPNAME=<functionapp-name> # Cannot be more than 8 characters
-export APP_INSIGHTS_LOCATION=<application insights location>
+export APP_INSIGHTS_LOCATION=<application-insights-location>
 export COSMOSDB_DATABASE_NAME=${APPNAME}-db
 export COSMOSDB_DATABASE_COL=${APPNAME}-col
 ```
@@ -27,8 +35,6 @@ az group create -n $RESOURCEGROUP -l $LOCATION
 Deploy Azure resources.
 
 ```bash
-cd src
-
 az group deployment create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-backend-functionapps.json \
@@ -129,7 +135,7 @@ Get the function key for the DroneStatus function.
 Deploy API Management
 
 ```bash
-export FUNCTIONAPP_KEY=<function key from the previous step>
+export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
 
 export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
 
@@ -144,7 +150,7 @@ az group deployment create \
 ## Build and run the device simulator
 
 ```bash
-export EVENT_HUB_CONNECTION_STRING=<event hub connection string>
+export EVENT_HUB_CONNECTION_STRING=<event-hub-connection-string> # Use the 'send' authorization rule
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 
 dotnet build $SIMULATOR_PROJECT_PATH
