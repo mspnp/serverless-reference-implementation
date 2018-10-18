@@ -14,7 +14,7 @@ add CICD to Drone Status using Azure Pipelines with YAML and Azure Functions Slo
 
 ## Configure CICD using Azure Pipelines
 
-Clone and add remote:
+Clone and add remote
 
 ```bash
 git clone https://github.com/mspnp/serverless-reference-implementation.git && \
@@ -22,7 +22,7 @@ cd serverless-reference-implementation && \
 git remote add <remote-name> <remote-url> # this remote url corresponds to the prerequisite step 4th
 ```
 
-Export the following environment variables:
+Export the following environment variables
 
 ```
 export SERVICECONNECTION=<service-connection-name> # use the name configured in the 2nd prerequisite step
@@ -32,7 +32,7 @@ export APPNAME=<app-name> # less or equal than 6 chars
 export SLOTNAME=<slot-name>
 ```
 
-Replace azure pipeline place holders:
+Replace azure pipeline place holders
 
 ```
 sed -i "s#ServiceConnectionName: '<serviceconnection>'#ServiceConnectionName: '$SERVICECONNECTION'#g" azure-pipelines.yml && \
@@ -42,19 +42,19 @@ sed -i "s#AppName: '<appName>'#AppName: '$APPNAME'#g" azure-pipelines.yml && \
 sed -i "s#SlotName: '<slotName>'#SlotName: '$SLOTNAME'#g" azure-pipelines.yml
 ```
 
-Push changes to azure repos or github:
+Push changes to azure repos or github
 
 ```bash
 git push <remote-name> master
 ```
 
-Follow instructions below to configure your first Azure Pipeline:
+Follow instructions below to configure your first Azure Pipeline
 
 [Get your first build with Azure Pipelines](https://docs.microsoft.com/en-us/azure/devops/pipelines/get-started-yaml?view=vsts#get-your-first-build)
 
 > Note: this first build will attemp to execute the azurepipeline.yml against master
 
-Trigger the CICD pipeline by pushing to staging:
+Trigger the CICD pipeline by pushing to staging
 
 ```
 git checkout -b staging && \
@@ -63,7 +63,7 @@ git push <remote-name> staging
 
 > Note: also feature branches are going through the CI pipeline.
 
-Follow CICD from Azure Pipelines:
+Follow CICD from Azure Pipelines
 
 ```
 open https://dev.azure.com/<organization-name>/<project-name>/_build
