@@ -200,8 +200,6 @@ Next, update the policies in the API Management gateway:
 
 ## Enable authentication
 
-## step 9
-
 1. In the Azure Portal, navigate to the drone status function.
 2. Select **Platform features**
 3. Click **Authentication / Authorization**
@@ -211,7 +209,7 @@ Next, update the policies in the API Management gateway:
 7. Click **OK**.
 8. Click **Save**.
 
-## step 10
+## Define a "GetStatus" role for the app
 
 1. In the Azure Portal, navigate to your Azure AD tenant.
 2. Click on **App registrations**.
@@ -231,7 +229,7 @@ Next, update the policies in the API Management gateway:
     ```
 6. Click **Save**.
 
-## step 11
+## Assign application to user or role
 
 1. In the Azure Portal, navigate to your Azure AD tenant.
 2. Click on **Enterprise Applications** and then click on the Drone Status application name.
