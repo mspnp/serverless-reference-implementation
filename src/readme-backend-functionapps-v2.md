@@ -47,12 +47,14 @@ az group deployment create \
 ```bash
 # publish the drone status function v2
 cd DroneStatus/nodejs && \
+dotnet publish -c Release -o bin || \
+cp bin/Release/netstandard2.0/extensions.json bin/. && \
+rm -rf obj && \
 npm install && \
 zip -r DroneStatusFunction-nodejs.zip * && \
 mkdir -p ./../../dronestatus-nodejs-publish/ && \
 mv DroneStatusFunction-nodejs.zip ./../../dronestatus-nodejs-publish/. && \
 cd  ./../../
-
 ```
 
 ## step 5

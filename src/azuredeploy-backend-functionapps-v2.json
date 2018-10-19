@@ -169,6 +169,14 @@
                     {
                         "name": "COSMOSDB_DATABASE_COL",
                         "value": "[parameters('cosmosDatabaseCollection')]"
+                    },
+                    {
+                        "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                        "value": "8.11.1"
+                    },
+                    {
+                        "name": "FUNCTIONS_WORKER_RUNTIME",
+                        "value": "node"
                     }
                 ]
             }
