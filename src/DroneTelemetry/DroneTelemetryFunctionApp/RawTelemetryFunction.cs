@@ -56,21 +56,21 @@ namespace DroneTelemetryFunctionApp
                 try
                 {
                     deviceState = telemetryProcessor.Deserialize(message.Body.Array, logger);
+
+                    try
+                    {
+                        await stateChangeProcessor.UpdateState(deviceState, logger);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error updating status document", deviceState);
+                        await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message, DeviceState = deviceState });
+                    }
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error deserializing message", message.SystemProperties.PartitionKey, message.SystemProperties.SequenceNumber);
                     await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message });
-                }
-
-                try
-                {
-                    await stateChangeProcessor.UpdateState(deviceState, logger);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Error updating status document", deviceState);
-                    await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message, DeviceState = deviceState });
                 }
             }
         }
