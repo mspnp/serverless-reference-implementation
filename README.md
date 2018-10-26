@@ -1,18 +1,41 @@
 # Drone Delivery Serverless
 
-follow [steps here](./src/readme.md) to deploy this RI.
+This project contains a reference implementation for two serverless application architectures.
 
-# Drone Status Function App CICD with Azure DevOps
+**Serverless web application**
 
-add CICD to Drone Status using Azure Pipelines with YAML and Azure Functions Slots.
+![](https://docs.microsoft.com/azure/architecture/reference-architectures/serverless/_images/serverless-web-app.png)
+
+The application serves static content from Azure Blob Storage, and implements an API using Azure Functions. The API reads data from Cosmos DB and returns the results to the web app.
+
+**Serverless event processing**
+
+![](https://docs.microsoft.com/azure/architecture/reference-architectures/serverless/_images/serverless-event-processing.png)
+
+The application ingests a stream of data, processes the data, and writes the results to a back-end database (Cosmos DB).
+
+For more information about these architectures, including guidance about best practices, see the following articles in the Azure Architecture Center: 
+
+- [Serverless web application](https://docs.microsoft.com/azure/architecture/reference-architectures/serverless/web-app)
+
+- [Serverless event processing using Azure Functions](https://docs.microsoft.com/azure/architecture/reference-architectures/serverless/event-processing)
+
+
+## Deployment
+
+Follow [steps here](./src/readme.md) to deploy this reference implementation.
+
+## Drone Status Function App CI/CD with Azure DevOps
+
+Add CI/CD to Drone Status using Azure Pipelines with YAML and Azure Functions Slots.
 
 ## Prerequistes
-1. [create Azure DevOps account](https://azure.microsoft.com/en-us/services/devops)
-2. [add Azure subscription as service connection](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/connect-to-azure?view=vsts#create-an-azure-resource-manager-service-connection-with-an-existing-service-principal)
-3. [optionally, assign service connection application to role, so it is allowed to create new azure resources](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-service-principal-portal#assign-application-to-role)
-4. create a Github or Azure Repos repository
+1. [Create Azure DevOps account](https://azure.microsoft.com/en-us/services/devops)
+2. [Add Azure subscription as service connection](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/connect-to-azure?view=vsts#create-an-azure-resource-manager-service-connection-with-an-existing-service-principal)
+3. [Optionally, assign service connection application to role, so it is allowed to create new azure resources](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-service-principal-portal#assign-application-to-role)
+4. Create a Github or Azure Repos repository.
 
-## Configure CICD using Azure Pipelines
+## Configure CI/CD using Azure Pipelines
 
 Clone and add remote
 
@@ -32,7 +55,7 @@ export APPNAME=<app-name> # less or equal than 6 chars
 export SLOTNAME=<slot-name>
 ```
 
-Replace azure pipeline place holders
+Replace Azure Pipeline place holders
 
 ```
 sed -i "s#ServiceConnectionName: '<serviceconnection>'#ServiceConnectionName: '$SERVICECONNECTION'#g" azure-pipelines.yml && \
@@ -54,7 +77,7 @@ Follow instructions below to configure your first Azure Pipeline
 
 > Note: this first build will attemp to execute the azurepipeline.yml against master
 
-Trigger the CICD pipeline by pushing to staging
+Trigger the CI/CD pipeline by pushing to staging
 
 ```
 git checkout -b staging && \
@@ -63,7 +86,7 @@ git push <remote-name> staging
 
 > Note: also feature branches are going through the CI pipeline.
 
-Follow CICD from Azure Pipelines
+Follow CI/CD from Azure Pipelines
 
 ```
 open https://dev.azure.com/<organization-name>/<project-name>/_build
