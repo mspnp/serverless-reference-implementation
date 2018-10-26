@@ -60,13 +60,13 @@ At this point you should have the following values, which you will need later:
 8. Navigate to the blob container named $web.
 9. Upload the files in the `ClientApp` directory to the container.
 
-See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website)
+For more information, see [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website)
 
 ## Update the reply URL
 
 1. In the Azure Portal, navigate to your Azure AD tenant.
 2. Click on **App registrations**.
 3. View all applications, and select the Fabrikam appliction.
-4. Clieck **Settings**/
+4. Click **Settings**.
 5. Under **Reply URL**, add the primary endpoint URL for the website, from the previous step.
 6. Click **Save**.
