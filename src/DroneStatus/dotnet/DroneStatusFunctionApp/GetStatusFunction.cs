@@ -12,7 +12,7 @@ namespace DroneStatusFunctionApp
         public const string GetDeviceStatusRoleName = "GetStatus";
 
         [FunctionName("GetStatusFunction")]
-        public static Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequest req, [CosmosDB(
+        public static Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)]HttpRequest req, [CosmosDB(
                 databaseName: "%COSMOSDB_DATABASE_NAME%",
                 collectionName: "%COSMOSDB_DATABASE_COL%",
                 ConnectionStringSetting = "COSMOSDB_CONNECTION_STRING",
