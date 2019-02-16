@@ -177,7 +177,7 @@ This step creates a new app registration for the API in Azure AD, and enables OI
 2. Click on **App registrations**.
 3. View all applications, and select the drone API application.
 4. From the application blade, click **Manifest** to open the inline manifest editor.
-5. Define a "GetStatus" role for the app by adding the following entry in the "appRoles" array in the manifest (replacing the placeholder GUID with a new GUID)
+5. Define a "GetStatus" role for the app by adding the following entry in the "appRoles" array in the manifest (replacing the placeholder GUID with a new GUID, you can generate one using the [GUID Generator}(https://www.guidgenerator.com))
 
     ```json
     {
