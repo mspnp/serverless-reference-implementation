@@ -144,7 +144,7 @@ az group deployment create \
    --template-file azuredeploy-apim.json \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
-           functionAppUrlV1=${FUNCTIONAPP_URL} 
+           functionAppUrlV1=${FUNCTIONAPP_URL}
 ```
 
 > Allow 20-30 minutes for this step to complete.
@@ -152,6 +152,18 @@ az group deployment create \
 ## Build and run the device simulator
 
 ```bash
+# list Event Hub namespace name(s)
+az eventhubs namespace list \
+     -g $RESOURCEGROUP \
+     --query [].name
+
+# list the send keys
+az eventhubs eventhub authorization-rule keys list \
+     -g $RESOURCEGROUP \
+     --eventhub-name $APPNAME-eh  \
+     --namespace-name <use-the-name-from-previous-step> \
+     -n send
+
 export EVENT_HUB_CONNECTION_STRING="<event-hub-connection-string>" # Use the 'send' authorization rule
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 

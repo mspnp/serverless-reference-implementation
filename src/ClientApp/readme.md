@@ -60,5 +60,5 @@ For more information, see [Static website hosting in Azure Storage](https://docs
 2. Click on **App registrations**.
 3. View all applications, and select the Fabrikam appliction.
 4. Click **Overview**.
-5. Under **Repdirecy URIs**, add the primary endpoint URL for the website, from the previous step.
+5. Under **Redirect URIs**, add the primary endpoint URL for the website, from the previous step.
 6. Click **Save**.
