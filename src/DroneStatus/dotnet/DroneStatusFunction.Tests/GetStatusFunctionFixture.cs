@@ -34,13 +34,10 @@ namespace DroneStatusFunction.Tests
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
 
-            var principal = new Mock<ClaimsPrincipal>();
-            principal.SetupGet(p => p.Claims)
-                .Returns(new[] { new Claim("roles", GetStatusFunction.GetDeviceStatusRoleName)});
-
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("roles", GetStatusFunction.GetDeviceStatusRoleName)}));
             var logger = new MockLogger();
 
-            var result = GetStatusFunction.Run(request.Object, null, principal.Object, logger);
+            var result = GetStatusFunction.Run(request.Object, null, principal, logger);
 
             Assert.IsType<BadRequestObjectResult>(result);
         }
