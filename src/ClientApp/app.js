@@ -7,7 +7,7 @@
         clientId: '<application id>',
         postLogoutRedirectUri: window.location.origin,
         apiId: '<api application id>',
-        apiUrl: '<URL of the API Management API endpoint>'
+        apiUrl: '<URL of the API Management API endpoint>/api/v1'
     };
     var authContext = new AuthenticationContext(config);
 
