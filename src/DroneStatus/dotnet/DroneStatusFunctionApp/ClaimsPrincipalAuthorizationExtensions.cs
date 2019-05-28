@@ -21,6 +21,7 @@ namespace DroneStatusFunctionApp
                 log.LogWarning("The principal does not have the required {roles}", string.Join(", ", missingRoles));
                 return false;
             }
+            
             return true;
         }
     }
