@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace DroneStatusFunctionApp
@@ -12,29 +13,38 @@ namespace DroneStatusFunctionApp
         public const string GetDeviceStatusRoleName = "GetStatus";
 
         [FunctionName("GetStatusFunction")]
-        public static Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = null)]HttpRequest req, [CosmosDB(
+        public static IActionResult Run(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)]HttpRequest req, 
+            [CosmosDB(
                 databaseName: "%COSMOSDB_DATABASE_NAME%",
                 collectionName: "%COSMOSDB_DATABASE_COL%",
                 ConnectionStringSetting = "COSMOSDB_CONNECTION_STRING",
                 Id = "{Query.deviceId}",
-                PartitionKey = "{Query.deviceId}")] dynamic deviceStatus, ILogger log)
+                PartitionKey = "{Query.deviceId}")] dynamic deviceStatus, 
+            ClaimsPrincipal principal,
+            ILogger log)
         {
             log.LogInformation("Processing GetStatus request.");
 
-            return req.HandleIfAuthorizedForRoles(new[] { GetDeviceStatusRoleName },
-                async () =>
-                {
-                    string deviceId = req.Query["deviceId"];
-                    if (deviceId == null)
-                    {
-                        return new BadRequestObjectResult("Missing DeviceId");
-                    }
+            if (!principal.IsAuthorizedByRoles(new[] { GetDeviceStatusRoleName }, log))
+            {
+                return new UnauthorizedResult();
+            }
 
-                    return await Task.FromResult<IActionResult>(deviceStatus != null
-                         ? (ActionResult)new OkObjectResult(deviceStatus)
-                         : new NotFoundResult());
-                },
-                log);
+            string deviceId = req.Query["deviceId"];
+            if (deviceId == null)
+            {
+                return new BadRequestObjectResult("Missing DeviceId");
+            }
+
+            if (deviceStatus == null)
+            {
+                return new NotFoundResult();
+            }
+            else
+            {
+                return new OkObjectResult(deviceStatus);
+            }
         }
     }
 }

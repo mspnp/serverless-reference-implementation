@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -27,82 +28,35 @@ namespace DroneStatusFunction.Tests
         }
 
         [Fact]
-        public async Task Function_ReturnsUnauthorized_ForMissingPrincipalHeader()
+        public void Function_ReturnsBadRequest_ForMissingDeviceId()
         {
             var request = new Mock<HttpRequest>();
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
-            request.Setup(r => r.Headers)
-                .Returns(new HeaderDictionary());
+
+            var principal = new Mock<ClaimsPrincipal>();
+            principal.SetupGet(p => p.Claims)
+                .Returns(new[] { new Claim("roles", GetStatusFunction.GetDeviceStatusRoleName)});
 
             var logger = new MockLogger();
 
-            var result = await GetStatusFunction.Run(request.Object, null, logger);
-
-            Assert.IsType<UnauthorizedResult>(result);
-            Assert.Contains(
-                logger.Entries,
-                e => e.logLevel == LogLevel.Error && e.state is IEnumerable<KeyValuePair<string, object>> properties
-                    && properties.Any(p => p.Key == "header" && (string)p.Value == HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey));
-        }
-
-        [Fact]
-        public async Task Function_ReturnsUnauthorized_ForInvalidPrincipalHeader()
-        {
-            var request = new Mock<HttpRequest>();
-            request.SetupGet(r => r.Query)
-                .Returns(new QueryCollection());
-            request.Setup(r => r.Headers)
-                .Returns(new HeaderDictionary
-                {
-                    [HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey] = "invalid header value"
-                });
-
-            var logger = new MockLogger();
-
-            var result = await GetStatusFunction.Run(request.Object, null, logger);
-
-            Assert.IsType<UnauthorizedResult>(result);
-            Assert.Contains(
-                logger.Entries,
-                e => e.logLevel == LogLevel.Error && e.state is IEnumerable<KeyValuePair<string, object>> properties
-                    && properties.Any(p => p.Key == "header" && (string)p.Value == HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey));
-        }
-
-        [Fact]
-        public async Task Function_ReturnsBadRequest_ForMissingDeviceId()
-        {
-            var request = new Mock<HttpRequest>();
-            request.SetupGet(r => r.Query)
-                .Returns(new QueryCollection());
-            request.Setup(r => r.Headers)
-                .Returns(new HeaderDictionary
-                {
-                    [HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey] = CreatePrincipalWithRoles(GetStatusFunction.GetDeviceStatusRoleName)
-                });
-
-            var logger = new MockLogger();
-
-            var result = await GetStatusFunction.Run(request.Object, null, logger);
+            var result = GetStatusFunction.Run(request.Object, null, principal.Object, logger);
 
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
-        public async Task Function_ReturnsUnauthorized_ForPrincipalWithoutRoles()
+        public void Function_ReturnsUnauthorized_ForPrincipalWithoutRoles()
         {
             var request = new Mock<HttpRequest>();
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
-            request.Setup(r => r.Headers)
-                .Returns(new HeaderDictionary
-                {
-                    [HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey] = CreatePrincipalWithRoles()
-                });
+
+            var principal = new Mock<ClaimsPrincipal>();
 
             var logger = new MockLogger();
 
-            var result = await GetStatusFunction.Run(request.Object, null, logger);
+            var result = GetStatusFunction.Run(request.Object, null, principal.Object, logger);
 
             Assert.IsType<UnauthorizedResult>(result);
             Assert.Contains(
@@ -112,20 +66,19 @@ namespace DroneStatusFunction.Tests
         }
 
         [Fact]
-        public async Task Function_ReturnsUnauthorized_ForPrincipalWithNonRequiredRoles()
+        public void Function_ReturnsUnauthorized_ForPrincipalWithNonRequiredRoles()
         {
             var request = new Mock<HttpRequest>();
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
-            request.Setup(r => r.Headers)
-                .Returns(new HeaderDictionary
-                {
-                    [HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey] = CreatePrincipalWithRoles("SomeRole", "SomeOtherRole")
-                });
+
+            var principal = new Mock<ClaimsPrincipal>();
+            principal.SetupGet(p => p.Claims)
+                .Returns(new[] { new Claim("SomeRole", "SomeOtherRole")});
 
             var logger = new MockLogger();
 
-            var result = await GetStatusFunction.Run(request.Object, null, logger);
+            var result = GetStatusFunction.Run(request.Object, null, principal.Object, logger);
 
             Assert.IsType<UnauthorizedResult>(result);
             Assert.Contains(
@@ -135,7 +88,7 @@ namespace DroneStatusFunction.Tests
         }
 
         [Fact]
-        public async Task Function_ReturnsNotFound_ForMissingDocument()
+        public void Function_ReturnsNotFound_ForMissingDocument()
         {
             var queryValues = new Dictionary<string, StringValues>
             {
@@ -145,31 +98,16 @@ namespace DroneStatusFunction.Tests
             var request = new Mock<HttpRequest>();
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection(queryValues));
-            request.Setup(r => r.Headers)
-                .Returns(new HeaderDictionary
-                {
-                    [HttpRequestAuthorizationExtensions.ClientPrincipalHeaderKey] = CreatePrincipalWithRoles(GetStatusFunction.GetDeviceStatusRoleName)
-                });
+
+            var principal = new Mock<ClaimsPrincipal>();
+            principal.SetupGet(p => p.Claims)
+                .Returns(new[] { new Claim("roles", GetStatusFunction.GetDeviceStatusRoleName)});
 
             var logger = new MockLogger();
 
-            var result = await GetStatusFunction.Run(request.Object, null, logger);
+            var result = GetStatusFunction.Run(request.Object, null, principal.Object, logger);
 
             Assert.IsType<NotFoundResult>(result);
-        }
-
-        private StringValues CreatePrincipalWithRoles(params string[] roles)
-        {
-            var token = new JObject
-            {
-                ["claims"] = new JArray(roles.Select(r =>
-                    new JObject
-                    {
-                        ["typ"] = "roles",
-                        ["val"] = r
-                    }).ToArray())
-            };
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes(token.ToString()));
         }
 
         private class MockLogger : ILogger
