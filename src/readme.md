@@ -147,15 +147,19 @@ az group deployment create \
            functionAppUrlV1=${FUNCTIONAPP_URL} 
 ```
 
+> Allow 20-30 minutes for this step to complete.
+
 ## Build and run the device simulator
 
 ```bash
-export EVENT_HUB_CONNECTION_STRING=<event-hub-connection-string> # Use the 'send' authorization rule
+export EVENT_HUB_CONNECTION_STRING="<event-hub-connection-string>" # Use the 'send' authorization rule
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 
 dotnet build $SIMULATOR_PROJECT_PATH
 dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
+
+The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, and expand the **Logs** tab.
 
 ## Enable authentication in the function app
 
@@ -167,7 +171,7 @@ This step creates a new app registration for the API in Azure AD, and enables OI
 4. Toggle App Service Authentication to **On**.
 5. Click **Azure Active Directory**.
 6. In the **Azure Active Directory Settings** blade, select **Express**, leave the default **Create New AD App**.
-7. Enter a name for application, such as "drone-app".
+7. Enter a name for application, such as "drone-api".
 8. Click **OK**.
 9. Click **Save**.
 
@@ -198,11 +202,11 @@ This step creates a new app registration for the API in Azure AD, and enables OI
 3. Click **Users and groups**.
 4. Click **Add user**.
 5. Click **Users and groups**.
-3. Select a user, and click **Select**.
+6. Select a user, and click **Select**.
 
     > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
 
-4. Click **Assign**.
+7. Click **Assign**.
 
 ## Deploy the single-page web app
 
@@ -242,8 +246,6 @@ Next, update the policies in the API Management gateway:
     </inbound>
     ```
 7. Click **Save**.
-8. Repeat for v2
-
 
 ## (Optional) Deploy v2 of GetStatus API
 
