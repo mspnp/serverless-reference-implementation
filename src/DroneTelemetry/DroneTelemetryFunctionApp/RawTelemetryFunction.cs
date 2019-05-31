@@ -11,27 +11,32 @@ using System.Threading.Tasks;
 
 namespace DroneTelemetryFunctionApp
 {
-    public static class RawTelemetryFunction
+    public class RawTelemetryFunction
     {
-        private static readonly TelemetryProcessor telemetryProcessor;
-        private static readonly StateChangeProcessor stateChangeProcessor;
+        private readonly TelemetryProcessor telemetryProcessor;
+        private readonly StateChangeProcessor stateChangeProcessor;
+
+        private readonly static DocumentClient client;
+        private readonly static string CosmosDBDatabase = GetEnvironmentVariable("COSMOSDB_DATABASE_NAME");
+        private readonly static string CosmosDBCollection = GetEnvironmentVariable("COSMOSDB_DATABASE_COL");
+
+        public RawTelemetryFunction(ITelemetrySerializer<DroneState> telemetrySerializer)
+        {
+            telemetryProcessor = new TelemetryProcessor(telemetrySerializer);
+            stateChangeProcessor = new StateChangeProcessor(client, CosmosDBDatabase, CosmosDBCollection);
+        }
 
         static RawTelemetryFunction()
         {
-            telemetryProcessor = new TelemetryProcessor(new TelemetrySerializer<DroneState>());
-            var client = new DocumentClient(new Uri(CosmosDBEndpoint), CosmosDBKey);
-            stateChangeProcessor = new StateChangeProcessor(client, CosmosDBDatabase, CosmosDBCollection);
+            var cosmosDBEndpoint = GetEnvironmentVariable("CosmosDBEndpoint");
+            var cosmosDBKey = GetEnvironmentVariable("CosmosDBKey");
+            client = new DocumentClient(new Uri(cosmosDBEndpoint), cosmosDBKey);
         }
 
         private static string GetEnvironmentVariable(string name)
         {
             return Environment.GetEnvironmentVariable(name, EnvironmentVariableTarget.Process);
         }
-
-        private static readonly string CosmosDBEndpoint = GetEnvironmentVariable("CosmosDBEndpoint");
-        private static readonly string CosmosDBKey = GetEnvironmentVariable("CosmosDBKey");
-        private static readonly string CosmosDBDatabase = GetEnvironmentVariable("COSMOSDB_DATABASE_NAME");
-        private static readonly string CosmosDBCollection = GetEnvironmentVariable("COSMOSDB_DATABASE_COL");
 
         private static string key = TelemetryConfiguration.Active.InstrumentationKey =
                                             GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
@@ -42,7 +47,7 @@ namespace DroneTelemetryFunctionApp
 
         [FunctionName("RawTelemetryFunction")]
         [StorageAccount("DeadLetterStorage")]
-        public static async Task RunAsync(
+        public async Task RunAsync(
             [EventHubTrigger("%EventHubName%", Connection = "EventHubConnection", ConsumerGroup ="%EventHubConsumerGroup%")]EventData[] messages,
             [Queue("deadletterqueue")] IAsyncCollector<DeadLetterMessage> deadLetterMessages,
             ILogger logger)
