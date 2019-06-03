@@ -17,25 +17,22 @@ namespace DroneTelemetryFunctionApp
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            var config = builder.Services.BuildServiceProvider().GetService<IConfiguration>();
+            builder.Services.AddOptions<StateChangeProcessorOptions>()
+                .Configure<IConfiguration>((configSection, configuration) =>
+                {
+                    configuration.Bind(configSection);
+                });
 
             builder.Services.AddTransient<ITelemetrySerializer<DroneState>, TelemetrySerializer<DroneState>>();
             builder.Services.AddTransient<ITelemetryProcessor, TelemetryProcessor>();
-            builder.Services.AddTransient<IStateChangeProcessor>(ctx =>
-            {
-                var client = ctx.GetService<IDocumentClient>();
-                return new StateChangeProcessor(
-                    client, 
-                    config.GetValue<string>("COSMOSDB_DATABASE_NAME"), 
-                    config.GetValue<string>("COSMOSDB_DATABASE_COL"));
+            builder.Services.AddTransient<IStateChangeProcessor, StateChangeProcessor>();
+
+            builder.Services.AddSingleton<IDocumentClient>(ctx => {
+                var config = ctx.GetService<IConfiguration>();
+                var cosmosDBEndpoint = config.GetValue<string>("CosmosDBEndpoint");
+                var cosmosDBKey = config.GetValue<string>("CosmosDBKey");
+                return new DocumentClient(new Uri(cosmosDBEndpoint), cosmosDBKey);
             });
-
-            var cosmosDBEndpoint = config.GetValue<string>("CosmosDBEndpoint");
-            var cosmosDBKey = config.GetValue<string>("CosmosDBKey");
-            builder.Services.AddSingleton<IDocumentClient>(new DocumentClient(new Uri(cosmosDBEndpoint), cosmosDBKey));
-
-            var key = TelemetryConfiguration.Active.InstrumentationKey = config.GetValue<string>("APPINSIGHTS_INSTRUMENTATIONKEY");
-            builder.Services.AddSingleton<TelemetryClient>(new TelemetryClient() { InstrumentationKey = key });
         }
     }
 }

@@ -1,27 +1,24 @@
 ﻿using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace DroneTelemetryFunctionApp
 {
-    public interface IStateChangeProcessor
-    {
-        Task<ResourceResponse<Document>> UpdateState(DeviceState source, ILogger log);
-    }
-
     public class StateChangeProcessor : IStateChangeProcessor
     {
         private IDocumentClient client;
         private readonly string cosmosDBDatabase;
         private readonly string cosmosDBCollection;
 
-        public StateChangeProcessor(IDocumentClient client, string cosmosDBDatabase, string cosmosDBCollection)
+        public StateChangeProcessor(IDocumentClient client, IOptions<StateChangeProcessorOptions> options)
         {
             this.client = client;
-            this.cosmosDBDatabase = cosmosDBDatabase;
-            this.cosmosDBCollection = cosmosDBCollection;
+            this.cosmosDBDatabase = options.Value.COSMOSDB_DATABASE_NAME;
+            this.cosmosDBCollection = options.Value.COSMOSDB_DATABASE_COL;
         }
 
         public async Task<ResourceResponse<Document>> UpdateState(DeviceState source, ILogger log)
