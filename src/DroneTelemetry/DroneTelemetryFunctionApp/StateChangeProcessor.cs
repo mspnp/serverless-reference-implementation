@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace DroneTelemetryFunctionApp
 {
-    public class StateChangeProcessor
+    public interface IStateChangeProcessor
+    {
+        Task<ResourceResponse<Document>> UpdateState(DeviceState source, ILogger log);
+    }
+
+    public class StateChangeProcessor : IStateChangeProcessor
     {
         private IDocumentClient client;
         private readonly string cosmosDBDatabase;
@@ -21,7 +26,7 @@ namespace DroneTelemetryFunctionApp
 
         public async Task<ResourceResponse<Document>> UpdateState(DeviceState source, ILogger log)
         {
-            log.LogInformation("Processing change message for device ID", source.DeviceId);
+            log.LogInformation("Processing change message for device ID {DeviceId}", source.DeviceId);
 
             DeviceState target = null;
 

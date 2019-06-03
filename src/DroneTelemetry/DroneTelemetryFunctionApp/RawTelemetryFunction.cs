@@ -1,6 +1,6 @@
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Documents;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
@@ -13,37 +13,17 @@ namespace DroneTelemetryFunctionApp
 {
     public class RawTelemetryFunction
     {
-        private readonly TelemetryProcessor telemetryProcessor;
-        private readonly StateChangeProcessor stateChangeProcessor;
+        private readonly ITelemetryProcessor telemetryProcessor;
+        private readonly IStateChangeProcessor stateChangeProcessor;
 
-        private readonly static DocumentClient client;
-        private readonly static string CosmosDBDatabase = GetEnvironmentVariable("COSMOSDB_DATABASE_NAME");
-        private readonly static string CosmosDBCollection = GetEnvironmentVariable("COSMOSDB_DATABASE_COL");
+        private readonly TelemetryClient telemetryClient;
 
-        public RawTelemetryFunction(ITelemetrySerializer<DroneState> telemetrySerializer)
+        public RawTelemetryFunction(ITelemetryProcessor telemetryProcessor, IStateChangeProcessor stateChangeProcessor, TelemetryClient telemetryClient)
         {
-            telemetryProcessor = new TelemetryProcessor(telemetrySerializer);
-            stateChangeProcessor = new StateChangeProcessor(client, CosmosDBDatabase, CosmosDBCollection);
+            this.telemetryProcessor = telemetryProcessor;
+            this.stateChangeProcessor = stateChangeProcessor;
+            this.telemetryClient = telemetryClient;
         }
-
-        static RawTelemetryFunction()
-        {
-            var cosmosDBEndpoint = GetEnvironmentVariable("CosmosDBEndpoint");
-            var cosmosDBKey = GetEnvironmentVariable("CosmosDBKey");
-            client = new DocumentClient(new Uri(cosmosDBEndpoint), cosmosDBKey);
-        }
-
-        private static string GetEnvironmentVariable(string name)
-        {
-            return Environment.GetEnvironmentVariable(name, EnvironmentVariableTarget.Process);
-        }
-
-        private static string key = TelemetryConfiguration.Active.InstrumentationKey =
-                                            GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY");
-
-        private static TelemetryClient telemetryClient =
-            new TelemetryClient() { InstrumentationKey = key };
-
 
         [FunctionName("RawTelemetryFunction")]
         [StorageAccount("DeadLetterStorage")]

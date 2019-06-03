@@ -4,7 +4,12 @@ using Serverless.Serialization.Models;
 
 namespace DroneTelemetryFunctionApp
 {
-    public class TelemetryProcessor
+    public interface ITelemetryProcessor
+    {
+        DeviceState Deserialize(byte[] payload, ILogger log);
+    }
+
+    public class TelemetryProcessor : ITelemetryProcessor
     {
         private readonly ITelemetrySerializer<DroneState> serializer;
 
@@ -17,7 +22,7 @@ namespace DroneTelemetryFunctionApp
         {
             DroneState restored = serializer.Deserialize(payload);
 
-            log.LogInformation("Process message for device ID", restored.DeviceId);
+            log.LogInformation("Deserialize message for device ID {DeviceId}", restored.DeviceId);
 
             var deviceState = new DeviceState();
             deviceState.DeviceId = restored.DeviceId;
