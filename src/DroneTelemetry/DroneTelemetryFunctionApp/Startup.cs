@@ -3,11 +3,11 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using Serverless.Serialization;
 using Serverless.Serialization.Models;
-using Microsoft.Extensions.Configuration;
 
 [assembly: FunctionsStartup(typeof(DroneTelemetryFunctionApp.Startup))]
 
