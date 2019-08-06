@@ -1,6 +1,10 @@
 
 # Serverless client app
 
+## Prerequisite
+
+ - Install [node](https://nodejs.org/en/download/)
+
 ## Register with your Azure Active Directory tenant
 
 1. Sign in to the [Azure portal](https://portal.azure.com).
@@ -34,11 +38,24 @@ At this point you should have the following values, which you will need later:
 
 ## Update the client app
 
-1. Open the file src/ClientApp/app.js and locate the setup of the window.config.
+1. Open the file src/ClientApp/src/services/config.js and complete the following fields.
 2. Update the **tenant** value with the Azure AD tenant name
 3. Update the **clientId** value with the Application ID
 4. Update the **apiId** value with the API Application ID
-5. Update the **apiUrl** value with the URL for the APIM gateway URL for v1
+5. Update the **url** value with the URL for the APIM gateway URL for v1
+
+## Create your static website
+
+1. install Gatsby cli
+```bash
+npm install -g gatsby-cli
+```
+
+2. navigate to the SPA client app folder and build static files
+```bash
+cd ./serverless-reference-implementation/src/ClientApp && \
+gatsby build
+```
 
 ## Deploy to Azure Storage static website hosting
 
@@ -50,7 +67,7 @@ At this point you should have the following values, which you will need later:
 6. Click **Save**.
 7. Copy the primary endpoint URL.
 8. Navigate to the blob container named $web.
-9. Upload the files in the `ClientApp` directory to the container.
+9. Upload the files in the `ClientApp/public` directory to the container.
 
 For more information, see [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website)
 
