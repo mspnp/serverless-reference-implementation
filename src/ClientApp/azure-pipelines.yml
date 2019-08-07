@@ -1,0 +1,38 @@
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+trigger:
+  branches:
+    include:
+    - master
+    - feature/*
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '10.x'
+  displayName: 'install node.js'
+
+- script: |
+    npm install -g gatsby-cli
+  displayName: 'install gatsby'
+
+- script: |
+    cd src/ClientApp
+    npm install
+    npx gatsby build
+  displayName: 'gatsby build'
+
+- task: CopyFiles@2
+  inputs:
+    sourceFolder: 'src/ClientApp/public'
+    contents: '**'
+    targetFolder: $(Build.ArtifactStagingDirectory)
+    cleanTargetFolder: true
+  displayName: 'copy built static website'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'drop'
+    publishLocation: 'Container'
