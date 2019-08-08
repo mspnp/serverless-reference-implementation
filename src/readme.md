@@ -227,6 +227,15 @@ Log back into your subscription if you've used a different tenant.
 az login
 ```
 
+### Configure Azure AD authentication in the Function App
+
+```bash
+az webapp auth update --resource-group $RESOURCEGROUP --name $APPNAME-ds-funcapp --enabled true \
+--action LoginWithAzureActiveDirectory \
+--aad-token-issuer-url $ISSUER_URL \
+--aad-client-id $API_APP_ID
+```
+
 ### Assign application to user or role
 This is required for the admin user who will need to be authenticated to use the Azure Function.
 
