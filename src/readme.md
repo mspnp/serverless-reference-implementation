@@ -5,13 +5,15 @@
 - [.NET Core 2.1](https://www.microsoft.com/net/download)
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
 
-
 Clone or download this repo locally.
 
 ```bash
 git clone https://github.com/mspnp/serverless-reference-implementation.git
 cd serverless-reference-implementation/src
 ```
+
+These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) . 
+
 
 ## Deploy Azure resources
 
@@ -24,6 +26,13 @@ export APPNAME=<functionapp-name> # Cannot be more than 6 characters
 export APP_INSIGHTS_LOCATION=<application-insights-location>
 export COSMOSDB_DATABASE_NAME=${APPNAME}-db
 export COSMOSDB_DATABASE_COL=${APPNAME}-col
+```
+
+Login to Azure CLI and select your subscription.
+
+```bash
+az login
+az account set --subscription <your-subscription-id>
 ```
 
 Create a resource group.
@@ -171,7 +180,7 @@ dotnet build $SIMULATOR_PROJECT_PATH
 dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
-The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, and expand the **Logs** tab.
+The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, expand the **Monitor** tab, and click on any of the logs.
 
 ## Enable authentication in the function app
 
@@ -208,9 +217,10 @@ This step creates a new app registration for the API in Azure AD, and enables OI
 6. Click **Save**.
 
 ### Assign application to user or role
+This is required for the admin user who will need to be authenticated to use the Azure Function.
 
 1. In the Azure Portal, navigate to your Azure AD tenant.
-2. Click on **Enterprise Applications** and then click on the Drone Status application name.
+2. Click on **Enterprise Applications** and then search and select the Drone Status application name.
 3. Click **Users and groups**.
 4. Click **Add user**.
 5. Click **Users and groups**.
