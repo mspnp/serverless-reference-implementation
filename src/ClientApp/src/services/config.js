@@ -6,16 +6,16 @@
 export const getAdalConfig = () => {
   return {
     instance: 'https://login.microsoftonline.com/',
-    tenant: ``,
-    clientId: ``,
+    tenant: `<Azure AD tenant name>`,
+    clientId: `<application id>`,
     postLogoutRedirectUri: window.location.origin,
-    apiId: ``
+    apiId: `<api application id>`
   };
 }
 
 export const getApiConfig = () =>
 {
   return {
-    url: ``
+    url: `<URL of the API Management API endpoint>`
   };
 }
