@@ -4,7 +4,6 @@
 
  - [Azure CLI 2.0.49 or later](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
  - [Azure DevOps account](https://azure.microsoft.com/services/devops)
- - [nodejs](https://nodejs.org/en/download/)
 
 ##  Register an application with your Azure Active Directory tenant
 
@@ -44,24 +43,7 @@ export NEW_REMOTE_URL=https://github.com/${GITHUB_USER}/serverless-reference-imp
 
 git clone https://github.com/mspnp/serverless-reference-implementation.git && \
 cd serverless-reference-implementation && \
-git remote add newremote $NEW_REMOTE_URL
-```
-
-```bash
-export APIM_GATEWAY_URL=$(az group deployment show \
-                                    --resource-group ${RESOURCEGROUP} \
-                                    --name azuredeploy-apim \
-                                    --query properties.outputs.apimGatewayURL.value \
-                                    --output tsv) 
-cat src/ClientApp/src/services/config.js | \
-sed "s#<Azure AD tenant name>#$TENANT_ID#g" | \
-sed "s#<application id>#$CLIENT_APP_ID#g" | \
-sed "s#<api application id>#$API_APP_ID#g" | \
-sed "s#<URL of the API Management API endpoint>#${APIM_GATEWAY_URL}#g" \
-> config.js.tmp && mv config.js.tmp src/ClientApp/src/services/config.js
-
-git add -u && \
-git commit -m "configure clientapp" && \
+git remote add newremote $NEW_REMOTE_URL && \
 git push newremote master
 ```
 
@@ -96,7 +78,26 @@ az pipelines create \
    --yml-path src/ClientApp/azure-pipelines.yml \
    --repository-type github \
    --repository $NEW_REMOTE_URL \
-   --branch master
+   --branch master \
+   --skip-first-run=true
+```
+## Create build pipeline variables and kickoff first run
+
+```bash
+export APIM_GATEWAY_URL=$(az group deployment show \
+                                    --resource-group ${RESOURCEGROUP} \
+                                    --name azuredeploy-apim \
+                                    --query properties.outputs.apimGatewayURL.value \
+                                    --output tsv) 
+
+# create variables to configure the SPA when building
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureTenantId --value=$TENANT_ID
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureClientId --value=$CLIENT_APP_ID
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiClientId --value=$API_APP_ID
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiUrl --value=$APIM_GATEWAY_URL
+
+# kick off first run
+ az pipelines build queue --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
 ```
 
 ## Monitor the build status and download the drop result
