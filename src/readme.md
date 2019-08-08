@@ -180,7 +180,7 @@ dotnet build $SIMULATOR_PROJECT_PATH
 dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
-The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, expand the **Monitor** tab, and clicking on any of the logs.
+The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, expand the **Monitor** tab, and click on any of the logs.
 
 ## Enable authentication in the function app
 
