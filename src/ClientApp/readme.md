@@ -100,6 +100,18 @@ export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 
 ## Update the reply URL for the registered application
 
+> If you're using a tenant different to the tenant associated to the subscription, log in to that tenant. You will need to log in the subscription after creating the application to continue the instructions.
+
+```bash
+az login --tenant $TENANT_ID --allow-no-subscriptions
+```
+
 ```bash
 az ad app update --id $CLIENT_APP_ID --set replyUrls="[\"$CLIENT_URL\"]"
+```
+
+> Log back into your subscription if you've used a different tenant.
+
+```bash
+az login
 ```

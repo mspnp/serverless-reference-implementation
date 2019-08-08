@@ -85,7 +85,7 @@ Deploy the drone status function
 
 ```bash
 ## Get the functiona app name from the deployment output
-export DRONE_STATUS_FUNCTION_API_APP_NAME=$(az group deployment show \
+export DRONE_STATUS_FUNCTION_APP_NAME=$(az group deployment show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.droneStatusFunctionAppName.value \
@@ -104,14 +104,14 @@ dotnet publish DroneStatus/dotnet/DroneStatusFunctionApp/ \
 az functionapp deployment source config-zip \
    --src dronestatus-publish/DroneStatusFunction.zip \
    -g $RESOURCEGROUP \
-   -n ${DRONE_STATUS_FUNCTION_API_APP_NAME}
+   -n ${DRONE_STATUS_FUNCTION_APP_NAME}
 ```
 
 Deploy the drone telemetry function
 
 ```bash
 ## Get the functiona app name from the deployment output
-export DRONE_TELEMETRY_FUNCTION_API_APP_NAME=$(az group deployment show \
+export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az group deployment show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.droneTelemetryFunctionAppName.value \
@@ -130,7 +130,7 @@ dotnet publish DroneTelemetry/DroneTelemetryFunctionApp/ \
 az functionapp deployment source config-zip \
    --src dronetelemetry-publish/DroneTelemetryFunction.zip \
    -g $RESOURCEGROUP \
-   -n ${DRONE_TELEMETRY_FUNCTION_API_APP_NAME}
+   -n ${DRONE_TELEMETRY_FUNCTION_APP_NAME}
 ```
 
 ## Deploy the API Management gateway
@@ -147,12 +147,12 @@ Deploy API Management
 ```bash
 export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
 
-export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_API_APP_NAME} --query defaultHostName -o tsv)/api"
+export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
 
 az group deployment create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-apim.json \
-   --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_API_APP_NAME} \
+   --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}
 ```
