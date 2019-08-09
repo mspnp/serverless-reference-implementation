@@ -82,7 +82,7 @@ export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --res
 export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
 ```
 
-See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details
+See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details.
 
 ## Set up the Azure CDN endpoint to point to the static web site
 
@@ -115,3 +115,16 @@ az ad app update --id $CLIENT_APP_ID --set replyUrls="[\"$CLIENT_URL\"]"
 ```bash
 az login
 ```
+
+## Launch the application granting consent
+
+The first time you use the client application you need to consent to the delegated permissions specified for the application, unless an administrator granted consent for all users in the directory. 
+
+For single-page applications, user consent can be granted by navigating to an Azure AD URL as specified below; the web site will request a user login and consent for the application. To actually use the application, you need to complete the rest of the deployment instructions to complete the configuration.
+
+```bash
+echo "Open a browser on 'https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize?client_id=${CLIENT_APP_ID}&response_type=code&redirect_uri=https%3A%2F%2F${CDN_ENDPOINT_HOST}&response_mode=query
+&scope=${API_APP_ID}%2Fuser_impersonation&state=12345'"
+```
+
+See [Types of permissions and consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent) for details.
