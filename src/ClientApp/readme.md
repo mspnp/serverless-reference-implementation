@@ -35,10 +35,30 @@ az ad sp update --id $CLIENT_APP_ID --add tags "WindowsAzureActiveDirectoryInteg
 az login
 ```
 
+## Create Azure Storage static website hosting
+
+```bash
+export STORAGE_ACCOUNT_NAME=<storage account name>
+
+# Create the storage account 
+az storage account create --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --location $LOCATION --kind StorageV2
+
+# Enable static web site support for the storage account
+az storage blob service-properties update --account-name $STORAGE_ACCOUNT_NAME --static-website --404-document 404.html --index-document index.html
+
+# Retrieve the static website endpoint
+export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --query primaryEndpoints.web --output tsv)
+export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
+```
+
+See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details.
+
+
 ## Clone and add remote
 
 ```
 export GITHUB_USER=<github-username>
+# the following repository must be created in GitHub beforehand under your repositories
 export NEW_REMOTE_URL=https://github.com/${GITHUB_USER}/serverless-reference-implementation.git
 
 git clone https://github.com/mspnp/serverless-reference-implementation.git && \
@@ -46,6 +66,8 @@ cd serverless-reference-implementation && \
 git remote add newremote $NEW_REMOTE_URL && \
 git push newremote master
 ```
+
+> Note: alternatively you could fork this repo and then clone.
 
 ## Setup Azure DevOps
 
@@ -62,9 +84,15 @@ AZURE_DEVOPS_PROJECT_NAME=<new-or-existent-project-name>
 az devops project create \
    --name $AZURE_DEVOPS_PROJECT_NAME \
    --organization $AZURE_DEVOPS_ORG
+
+# create service principal for Azure Resource Management from Azure Pipelines
+export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor") && \
+export ARM_TENANT_ID=$(echo $SP_DETAILS | jq ".tenant" -r) && \
+export ARM_SP_CLIENT_ID=$(echo $SP_DETAILS | jq ".appId" -r) && \
+export ARM_SP_CLIENT_SECRET=$(echo $SP_DETAILS | jq ".password" -r)
 ```
 
-## Create build YAML pipeline
+## Create multi-stage YAML pipeline
 
 ```
 # export Azure DevOps resources
@@ -81,7 +109,8 @@ az pipelines create \
    --branch master \
    --skip-first-run=true
 ```
-## Create build pipeline variables and kickoff first run
+
+## Create variables and kickoff first CI/CD run
 
 ```bash
 export APIM_GATEWAY_URL=$(az group deployment show \
@@ -96,42 +125,25 @@ az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-nam
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiClientId --value=$API_APP_ID
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiUrl --value=$APIM_GATEWAY_URL
 
+# create variables to deploy to Azure Storage static website hosting
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmTenantId --value=$ARM_TENANT_ID && \
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientId --value=$ARM_SP_CLIENT_ID && \
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientSecret --value=$ARM_SP_CLIENT_SECRET --secret=true
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME
+
 # kick off first run
  az pipelines build queue --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
 ```
 
-## Monitor the build status and download the drop result
+> Note: from your Azure DevOps organization, please consider enabling the `Multi-stage pipelines preview feature` for a better experience
+
+## Monitor the current pipeline execution status
 
 ```bash
-# monitor until build is completed
+# monitor until stages are completed
 export COMMIT_SHA1=$(git rev-parse HEAD) && \
-until export BUILD_ID=$(az pipelines build list --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}' && status == 'completed']".id -o tsv 2> /dev/null) && test -n "$BUILD_ID"; do echo "Monitoring build..." && sleep 20; done
-
-# download drop and unzip
-az devops invoke --area build --resource artifacts --route-parameters project=$AZURE_DEVOPS_PROJECT_NAME buildId=$BUILD_ID --query-parameters artifactName=drop format=zip --http-method GET --api-version 5.1 --out-file drop.zip --accept-media-type="application/zip" && \
-unzip ./drop.zip
+until export PIPELINE_STATUS=$(az pipelines build list --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
 ```
-
-## Deploy to Azure Storage static website hosting
-
-```bash
-export STORAGE_ACCOUNT_NAME=<storage account name>
-
-# Create the storage account 
-az storage account create --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --location $LOCATION --kind StorageV2
-
-# Enable static web site support for the storage account
-az storage blob service-properties update --account-name $STORAGE_ACCOUNT_NAME --static-website --404-document 404.html --index-document index.html
-
-# Upload the web site
-az storage blob upload-batch --source ./ClientApp/drop --destination \$web --account-name $STORAGE_ACCOUNT_NAME
-
-# Retrieve the static website endpoint
-export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --query primaryEndpoints.web --output tsv)
-export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
-```
-
-See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details.
 
 ## Set up the Azure CDN endpoint to point to the static web site
 
