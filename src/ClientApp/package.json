@@ -1,0 +1,39 @@
+{
+  "name": "fabrikam-drone-status-app",
+  "private": true,
+  "description": "A simple SPA to authenticate a serverless API using barebones Gatsby",
+  "version": "0.1.0",
+  "author": "mspnp",
+  "license": "MIT",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "format": "prettier --write src/**/*.{js,jsx}",
+    "start": "npm run develop",
+    "serve": "gatsby serve",
+    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\""
+  },
+  "keywords": [
+    "gatsby"
+  ],
+  "dependencies": {
+    "@uifabric/fluent-theme": "^0.16.7",
+    "adal-angular": "^1.0.17",
+    "axios": "^0.19.0",
+    "gatsby": "^2.13.51",
+    "office-ui-fabric-react": "^6.176.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "devDependencies": {
+    "gatsby-plugin-typescript": "^2.0.13",
+    "prettier": "^1.17.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mspnp/serverless-reference-implementation"
+  },
+  "bugs": {
+    "url": "https://github.com/mspnp/serverless-reference-implementation/issues"
+  }
+}
