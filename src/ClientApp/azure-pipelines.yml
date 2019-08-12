@@ -10,7 +10,7 @@ trigger:
 stages:
 - stage: Build
   jobs:
-  - job: ProductionWebsiteBuild
+  - job: WebsiteBuild
     displayName: Build Fabrikam Drone Status app using Gatbsyjs
     pool:
       vmImage: 'Ubuntu-16.04'
@@ -37,6 +37,11 @@ stages:
         npx gatsby build
       displayName: 'gatsby build'
 
+    - script: |
+        cd $(Build.SourcesDirectory)
+        echo $(docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.1-linux-netcoreapp2.1 /repo | grep -oP '(?<="MajorMinorPatch":")[^"]*') > src/ClientApp/public/version.txt
+      displayName: 'bump version'
+
     - task: PublishBuildArtifacts@1
       inputs:
         pathtoPublish: 'src/ClientApp/public'
@@ -55,14 +60,21 @@ stages:
         deploy:
           steps:
           - script: |
+              echo '##vso[task.setvariable variable=nextVersion]'$(cat "$(Pipeline.Workspace)/drop/version.txt")
+            displayName: 'set nextVersion variable'
+            name: setVarNextVersion
+
+          - script: |
               az login --service-principal -u $(azureArmClientId) -p $(azureArmClientSecret) --tenant $(azureArmTenantId)
               az storage blob upload-batch -s "$(Pipeline.Workspace)/drop" --destination \$web --account-name $(azureStorageAccountName)
               echo "content uploaded at https://$(azureStorageAccountName).azureedge.net/index.html"
             displayName: 'upload to Azure Storage static website hosting'
+                    
           - task: GithubRelease@0 
             displayName: 'Create GitHub Release'      
             inputs:
               gitHubConnection: $(gitHubServiceConnectionName)
-              repositoryName: $(Build.Repository.Name)
               tagSource: manual
-              tag: $(Build.BuildNumber)
+              tag: $(nextVersion)
+              assets: $(Pipeline.Workspace)/drop
+              title: 'Fabrikam Drone Status App $(nextVersion)'
