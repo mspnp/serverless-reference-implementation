@@ -79,6 +79,7 @@ az extension add --name azure-devops
 AZURE_DEVOPS_ORG_NAME=<devops-org-name>
 AZURE_DEVOPS_ORG=https://dev.azure.com/$AZURE_DEVOPS_ORG_NAME
 AZURE_DEVOPS_PROJECT_NAME=<new-or-existent-project-name>
+AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME=${GITHUB_USER}-srvconn
 
 # create project or skip this step if you are using an existent Azure DevOps project
 az devops project create \
@@ -104,6 +105,7 @@ az pipelines create \
    --project $AZURE_DEVOPS_PROJECT_NAME \
    --name clientapp-cicd \
    --yml-path src/ClientApp/azure-pipelines.yml \
+   --service-connection $AZURE_GITHUB_SERVICE_CONNECTION_NAME
    --repository-type github \
    --repository $NEW_REMOTE_URL \
    --branch master \
@@ -127,6 +129,7 @@ az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-nam
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmTenantId --value=$ARM_TENANT_ID && \
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientId --value=$ARM_SP_CLIENT_ID && \
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientSecret --value=$ARM_SP_CLIENT_SECRET --secret=true && \
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME
 
 # kick off first run

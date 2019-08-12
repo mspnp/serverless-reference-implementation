@@ -59,3 +59,10 @@ stages:
               az storage blob upload-batch -s "$(Pipeline.Workspace)/drop" --destination \$web --account-name $(azureStorageAccountName)
               echo "content uploaded at https://$(azureStorageAccountName).azureedge.net/index.html"
             displayName: 'upload to Azure Storage static website hosting'
+          - task: GithubRelease@0 
+            displayName: 'Create GitHub Release'      
+            inputs:
+              gitHubConnection: $(gitHubServiceConnectionName)
+              repositoryName: $(Build.Repository.Name)
+              tagSource: manual
+              tag: $(Build.BuildNumber)
