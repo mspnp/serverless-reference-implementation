@@ -22,10 +22,6 @@ stages:
       displayName: 'install node.js'
 
     - script: |
-        npm install -g gatsby-cli
-      displayName: 'install gatsby'
-
-    - script: |
         cd src/ClientApp
         cat > .env.production <<EOF
         AZURE_TENANT_ID=$(azureTenantId)
