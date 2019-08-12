@@ -3,7 +3,8 @@
 ## Prerequisites
 
 - [.NET Core 2.1](https://www.microsoft.com/net/download)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.0.69 or higher
+- [SED](https://www.gnu.org/software/sed/)
 
 Clone or download this repo locally.
 
@@ -162,18 +163,18 @@ az group deployment create \
 
 ```bash
 # list Event Hub namespace name(s)
-az eventhubs namespace list \
+export EH_NAMESPACE=$(az eventhubs namespace list \
      -g $RESOURCEGROUP \
-     --query [].name
+     --query [].name --output tsv)
 
 # list the send keys
-az eventhubs eventhub authorization-rule keys list \
+export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule keys list \
      -g $RESOURCEGROUP \
      --eventhub-name $APPNAME-eh  \
-     --namespace-name <use-the-name-from-previous-step> \
-     -n send
+     --namespace-name $EH_NAMESPACE \
+     -n send \
+     --query primaryConnectionString --output tsv)
 
-export EVENT_HUB_CONNECTION_STRING="<event-hub-connection-string>" # Use the 'send' authorization rule
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 
 dotnet build $SIMULATOR_PROJECT_PATH
@@ -186,35 +187,54 @@ The simulator sends data to Event Hubs, which triggers the drone telemetry funct
 
 This step creates a new app registration for the API in Azure AD, and enables OIDC authentication in the function app.
 
-1. In the Azure Portal, navigate to the drone status function.
-2. Select **Platform features**
-3. Click **Authentication / Authorization**
-4. Toggle App Service Authentication to **On**.
-5. Click **Azure Active Directory**.
-6. In the **Azure Active Directory Settings** blade, select **Express**, leave the default **Create New AD App**.
-7. Enter a name for application, such as "drone-api".
-8. Click **OK**.
-9. Click **Save**.
+### Register the application in Azure AD
+If you're planning on using the tenant associated to your Azure subscription you can retrieve it.
 
-### Define a "GetStatus" role for the app
+```bash
+export TENANT_ID=$(az account show --query tenantId --output tsv)
+```
 
-1. In the Azure Portal, navigate to your Azure AD tenant.
-2. Click on **App registrations**.
-3. View all applications, and select the drone API application.
-4. From the application blade, click **Manifest** to open the inline manifest editor.
-5. Define a "GetStatus" role for the app by adding the following entry in the "appRoles" array in the manifest (replacing the placeholder GUID with a new GUID)
+If you're planning on using a different tenant instead, log in to that tenant. You will need to log in the subscription after creating the application to continue the instructions.
 
-    ```json
-    {
-    "allowedMemberTypes": [ "User" ],
-    "description":"Access to device status",
-    "displayName":"Get Device Status",
-    "id": "[generate a new GUID]",
-    "isEnabled":true,
-    "value":"GetStatus"
-    }
-    ```
-6. Click **Save**.
+```bash
+export TENANT_ID=<your tenant id>
+az login --tenant $TENANT_ID --allow-no-subscriptions
+```
+
+```bash
+# Specify the new app name
+export API_APP_NAME=<app name>
+
+# Collect information about your tenant
+export FEDERATION_METADATA_URL="https://login.microsoftonline.com/$TENANT_ID/FederationMetadata/2007-06/FederationMetadata.xml"
+export ISSUER_URL=$(curl $FEDERATION_METADATA_URL --silent | sed -n 's/.*entityID="\([^"]*\).*/\1/p')
+
+# Create the application registration, defining a new application role and requesting access to read a user using the Graph API
+export API_APP_ID=$(az ad app create --display-name $API_APP_NAME --oauth2-allow-implicit-flow true \
+--native-app false --reply-urls http://localhost --identifier-uris "http://$API_APP_NAME" \
+--app-roles '  [ {  "allowedMemberTypes": [ "User" ], "description":"Access to device status", "displayName":"Get Device Status", "isEnabled":true, "value":"GetStatus" }]' \
+--required-resource-accesses '  [ {  "resourceAppId": "00000003-0000-0000-c000-000000000000", "resourceAccess": [ { "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d", "type": "Scope" } ] }]' \
+--query appId --output tsv)
+
+# Create a service principal for the registered application
+az ad sp create --id $API_APP_ID
+az ad sp update --id $API_APP_ID --add tags "WindowsAzureActiveDirectoryIntegratedApp"
+```
+
+Log back into your subscription if you've used a different tenant.
+
+```bash
+az login
+```
+
+### Configure Azure AD authentication in the Function App
+
+```bash
+az webapp auth update --resource-group $RESOURCEGROUP --name $APPNAME-ds-funcapp --enabled true \
+--action LoginWithAzureActiveDirectory \
+--aad-token-issuer-url $ISSUER_URL \
+--aad-client-id $API_APP_ID
+```
 
 ### Assign application to user or role
 This is required for the admin user who will need to be authenticated to use the Azure Function.
@@ -232,42 +252,22 @@ This is required for the admin user who will need to be authenticated to use the
 
 ## Deploy the single-page web app
 
-Follow the instructions [here](./ClientApp/readme.md) to deploy the SPA.
+Follow the instructions [here](./ClientApp/readme.md) to deploy the SPA. Make sure to follow these instructions in the same session and keep the session open to make variables available to the next step.
 
-Next, update the policies in the API Management gateway:
+Next, update the policies in the API Management gateway. This update adds the CDN endpoint URL as an allowed origin for the CORS configuration, and enables authentication for tokens issued for the registered application for the API.
 
-1. In the Azure Portal, navigate to your API Management instance.
-2. Click **APIs** and select the GetStatus API.
-3. Click v1
-4. Click **Design**.
-5. Click the **&lt;/&gt;** icon next to **Policies**.
-6. Paste in the following policy definitions:
-
-    ```xml
-    <inbound>
-        <base />
-        <cors allow-credentials="true">
-            <allowed-origins>
-                <origin>[Client website URL]</origin>
-            </allowed-origins>
-            <allowed-methods>
-                <method>GET</method>
-            </allowed-methods>
-            <allowed-headers>
-                <header>*</header>
-            </allowed-headers>
-        </cors>
-        <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Unauthorized. Access token is missing or invalid.">
-            <openid-config url="https://login.microsoftonline.com/[Azure AD directory ID]/.well-known/openid-configuration" />
-            <required-claims>
-                <claim name="aud">
-                    <value>[API Application ID]</value>
-                </claim>
-            </required-claims>
-        </validate-jwt>
-    </inbound>
-    ```
-7. Click **Save**.
+```bash
+export API_MANAGEMENT_SERVICE=$(az group deployment show \
+                                    --resource-group ${RESOURCEGROUP} \
+                                    --name azuredeploy-apim \
+                                    --query properties.outputs.apimGatewayServiceName.value \
+                                    --output tsv) 
+export API_POLICY_ID="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv1/policies/policy"
+az resource create --id $API_POLICY_ID \
+    --properties "{
+        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$API_APP_ID</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
+    }"
+```
 
 ## (Optional) Deploy v2 of GetStatus API
 

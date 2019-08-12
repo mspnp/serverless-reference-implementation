@@ -385,6 +385,10 @@
     "apimGatewayURL": {
       "type": "string",
       "value": "[reference(variables('apiManagementServiceName')).gatewayUrl]"
+    },
+    "apimGatewayServiceName": {
+      "type": "string",
+      "value": "[variables('apiManagementServiceName')]"
     }
   }
 }
