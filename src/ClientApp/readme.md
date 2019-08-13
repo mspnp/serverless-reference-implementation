@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
- - [Azure CLI 2.0.49 or later](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+ - [Azure CLI 2.0.69 or later](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
  - [Azure DevOps account](https://azure.microsoft.com/services/devops)
 
 ##  Register an application with your Azure Active Directory tenant
