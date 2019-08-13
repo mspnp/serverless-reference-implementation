@@ -53,6 +53,19 @@ export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
 
 See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details.
 
+## Set up the Azure CDN endpoint to point to the static web site
+
+```bash
+export CDN_NAME=<cdn name>
+
+# Create the CDN profile and endpoint
+az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME
+export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resource-group $RESOURCEGROUP --profile-name $CDN_NAME --name $CDN_NAME \
+--no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
+--query hostName --output tsv)
+
+export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
+```
 
 ## Clone and add remote
 
@@ -130,7 +143,9 @@ az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-nam
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientId --value=$ARM_SP_CLIENT_ID && \
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientSecret --value=$ARM_SP_CLIENT_SECRET --secret=true && \
 az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME && \
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureCdnName --value=$CDN_NAME && \
+az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP
 
 # kick off first run
  az pipelines build queue --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
@@ -144,20 +159,6 @@ az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-nam
 # monitor until stages are completed
 export COMMIT_SHA1=$(git rev-parse HEAD) && \
 until export PIPELINE_STATUS=$(az pipelines build list --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
-```
-
-## Set up the Azure CDN endpoint to point to the static web site
-
-```bash
-export CDN_NAME=<cdn name>
-
-# Create the CDN profile and endpoint
-az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME
-export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resource-group $RESOURCEGROUP --profile-name $CDN_NAME --name $CDN_NAME \
---no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
---query hostName --output tsv)
-
-export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 ```
 
 ## Update the reply URL for the registered application
