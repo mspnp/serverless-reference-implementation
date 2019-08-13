@@ -1,0 +1,61 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+  paths:
+    include: 
+    - src/ClientApp
+
+stages:
+- stage: Build
+  jobs:
+  - job: ProductionWebsiteBuild
+    displayName: Build Fabrikam Drone Status app using Gatbsyjs
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    continueOnError: false
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '10.x'
+      displayName: 'install node.js'
+
+    - script: |
+        cd src/ClientApp
+        cat > .env.production <<EOF
+        AZURE_TENANT_ID=$(azureTenantId)
+        AZURE_CLIENT_ID=$(azureClientId)
+        AZURE_API_CLIENT_ID=$(azureApiClientId)
+        AZURE_API_URL=$(azureApiUrl)
+        EOF
+      displayName: 'configure azure tenant, client and api details'
+
+    - script: |
+        cd src/ClientApp
+        npm install
+        npx gatsby build
+      displayName: 'gatsby build'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathtoPublish: 'src/ClientApp/public'
+        artifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: Deploy
+  jobs:
+  - deployment: WebsiteDeploy
+    displayName: Deploy Fabrikam Drone Status app
+    pool:
+      vmImage: 'Ubuntu-16.04'
+    environment: 'fabrikamdronestatus-prod'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              az login --service-principal -u $(azureArmClientId) -p $(azureArmClientSecret) --tenant $(azureArmTenantId)
+              az storage blob upload-batch -s "$(Pipeline.Workspace)/drop" --destination \$web --account-name $(azureStorageAccountName)
+              echo "content uploaded at https://$(azureStorageAccountName).azureedge.net/index.html"
+            displayName: 'upload to Azure Storage static website hosting'
