@@ -28,7 +28,7 @@ export interface IDroneStatusDetailsListState {
 
 export class DroneStatusDetailsList extends React.Component<{}, IDroneStatusDetailsListState> {
   private _columns: IColumn[];
-  private _apiUrl = getApiConfig().url;
+  private _apiCfg = getApiConfig();
 
   constructor(props: {}) {
     super(props);
@@ -100,7 +100,7 @@ export class DroneStatusDetailsList extends React.Component<{}, IDroneStatusDeta
       this.setState({ loading: true })
 
       axios
-        .get(this._apiUrl + "/dronestatus/" + id,
+        .get(this.getApiResourceUrl(id),
           {
             headers: {
               'Authorization': 'Bearer ' + token,
@@ -137,6 +137,8 @@ export class DroneStatusDetailsList extends React.Component<{}, IDroneStatusDeta
   handleRequestError = (error) => {
     this.setState({ loading: false, error })
   }
+  
+  getApiResourceUrl = (id: string): string => `${this._apiCfg.url}/api${this._apiCfg.version}/dronestatus/${id}`;
 }
 
 export default DroneStatusDetailsList
