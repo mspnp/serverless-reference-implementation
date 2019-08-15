@@ -12,7 +12,7 @@ import { DetailsList, DetailsListLayoutMode, SelectionMode, CheckboxVisibility, 
 import { SpinnerBasic } from "./spinner-basic"
 
 import { getApiConfig } from "../services/config"
-import { acquireTokenForAPI } from "../services/auth"
+import { auth } from "../services/auth"
 
 export interface IDroneStatusDetailsListItem {
   key: number;
@@ -90,7 +90,7 @@ export class DroneStatusDetailsList extends React.Component<{}, IDroneStatusDeta
 
   // This data is fetched at run time on the client.
   fetchDroneStatusById = (id) => {
-    acquireTokenForAPI((error, token) => {
+    auth.acquireTokenForAPI((error, token) => {
       if (error)
       {
         this.handleRequestError(error)
