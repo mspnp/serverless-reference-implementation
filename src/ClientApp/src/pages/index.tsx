@@ -9,7 +9,7 @@ import { FontSizes } from '@uifabric/fluent-theme/lib/fluent/FluentType';
 import { initializeIcons } from '@uifabric/icons';
 initializeIcons();
 
-import { handleLoginCallback, isLoggedIn, login, logout, getUserName } from "../services/auth"
+import { auth } from "../services/auth"
 
 import { DroneStatusDetailsList } from "../components/drone-status"
 
@@ -42,7 +42,7 @@ export class LoginActionButton extends React.Component<IButtonProps> {
 
     return (
       <div className={css(classNames.loginActionButton)}>
-          {isLoggedIn() ? (
+          {auth.isLoggedIn() ? (
             <ActionButton
             data-automation-id="test"
             iconProps={{ iconName: 'AddFriend' }}
@@ -51,9 +51,9 @@ export class LoginActionButton extends React.Component<IButtonProps> {
             checked={checked}
             onClick={event => {
               event.preventDefault()
-              logout()
+              auth.logout()
               }}>
-              Sign out ({getUserName()})
+              Sign out ({auth.getUserName()})
             </ActionButton>
           ) : (
             <ActionButton
@@ -64,7 +64,7 @@ export class LoginActionButton extends React.Component<IButtonProps> {
             checked={checked}
             onClick={event => {
               event.preventDefault()
-              login()
+              auth.login()
               }}>
               Sign in
             </ActionButton>
@@ -78,7 +78,7 @@ export class RestrictedContent extends React.Component {
   public render(): JSX.Element {
     return (
         <div>
-          {isLoggedIn() ? (
+          {auth.isLoggedIn() ? (
             <>
               <DroneStatusDetailsList />
             </>
@@ -86,7 +86,7 @@ export class RestrictedContent extends React.Component {
             <>
               You should <Link onClick={e => {
               e.preventDefault()
-              login()
+              auth.login()
               }}>Sign in</Link> to see restricted
               content!
             </>
@@ -113,7 +113,7 @@ const App: React.FunctionComponent = () => {
         },
       }}
       gap={15}>
-      {handleLoginCallback()}
+      {auth.handleLoginCallback()}
       <Stack.Item align="end">
         <LoginActionButton />
       </Stack.Item>
