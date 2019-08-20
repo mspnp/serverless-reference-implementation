@@ -61,7 +61,7 @@ export CDN_NAME=<cdn name>
 # Create the CDN profile and endpoint
 az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME
 export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resource-group $RESOURCEGROUP --profile-name $CDN_NAME --name $CDN_NAME \
---no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
+--no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST --enable-compression \
 --query hostName --output tsv)
 
 export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
