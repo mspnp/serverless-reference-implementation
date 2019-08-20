@@ -39,7 +39,9 @@ stages:
 
     - script: |
         cd $(Build.SourcesDirectory)
-        echo $(docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.1-linux-netcoreapp2.1 /repo | grep -oP '(?<="MajorMinorPatch":")[^"]*') > src/ClientApp/public/version.txt
+        echo $(docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.1-linux-netcoreapp2.1 /repo) > .gitversion
+        echo $(cat .gitversion | grep -oP '(?<="MajorMinorPatch":")[^"]*') > src/ClientApp/public/version.txt
+        echo $(cat .gitversion | grep -oP '(?<="FullSemVer":")[^"]*' | sed -e "s/\+/-/g") > src/ClientApp/public/semver.txt
       displayName: 'bump version'
 
     - task: PublishBuildArtifacts@1
@@ -61,6 +63,7 @@ stages:
           steps:
           - script: |
               echo '##vso[task.setvariable variable=releaseVersion]'$(cat "$(Pipeline.Workspace)/drop/version.txt")
+              echo '##vso[task.setvariable variable=releaseSemVer]'$(cat "$(Pipeline.Workspace)/drop/semver.txt")
             displayName: 'set release version'
             name: setVarReleaseVersion
 
@@ -75,15 +78,17 @@ stages:
           
           - script: |
               az login --service-principal -u $(azureArmClientId) -p $(azureArmClientSecret) --tenant $(azureArmTenantId)
-              az storage blob upload-batch -s "$(Pipeline.Workspace)/drop" --destination \$web --account-name $(azureStorageAccountName)
-              az cdn endpoint purge --resource-group $(azureResourceGroup) --profile-name $(azureCdnName) --name $(azureCdnName) --content-paths '/' '/index.html' '/404.html' '/version.txt'
+              # upload content to container versioned folder
+              az storage blob upload-batch -s "$(Pipeline.Workspace)/drop" --destination "\$web\$(releaseSemVer)" --account-name $(azureStorageAccountName)
+              # target new version
+              az cdn endpoint update --resource-group $(azureResourceGroup) --profile-name $(azureCdnName) --name $(azureCdnName) --origin-path '/$(releaseSemVer)'
               AZURE_CDN_ENDPOINT_HOSTNAME=$(az cdn endpoint show --resource-group $(azureResourceGroup) --name $(azureCdnName) --profile-name $(azureCdnName) --query hostName -o tsv)
               echo "Azure CDN endpooint host ${AZURE_CDN_ENDPOINT_HOSTNAME}"
               echo '##vso[task.setvariable variable=azureCndEndpointHost]'$AZURE_CDN_ENDPOINT_HOSTNAME
             displayName: 'upload to Azure Storage static website hosting and purge Azure CDN endpoint'
           
           - script: |
-              liveVersion=$(curl --fail --silent "https://$(azureCndEndpointHost)/version.txt")
-              [[ $liveVersion == $(releaseVersion) ]] && echo -e "\033[1;32m## [Passed] website validation Ok: $liveVersion is live now\033[0m" || >&2 echo -e "\033[0;31m## [Fail] website validation Fail: expected $(releaseVersion) - actual $liveVersion\033[0m"
+              liveVersion=$(curl --fail --silent "https://$(azureCndEndpointHost)/semver.txt")
+              [[ $liveVersion == $(releaseSemVer) ]] && echo -e "\033[1;32m## [Passed] website validation Ok: $liveVersion is live now\033[0m" || >&2 echo -e "\033[0;31m## [Fail] website validation Fail: expected $(releaseSemVer) - actual $liveVersion\033[0m"
             displayName: 'validate website version'
             failOnStderr: true
