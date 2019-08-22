@@ -64,6 +64,14 @@ export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resourc
 --no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
 --query hostName --output tsv)
 
+# Configure custom caching rules 
+az cdn endpoint update \
+   -g $RESOURCEGROUP \
+   --profile-name $CDN_NAME \
+   -n $CDN_NAME \
+   --set deliveryPolicy.description="" \
+   --set deliveryPolicy.rules='[{"actions": [{"name": "CacheExpiration","parameters": {"cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"extensions": ["js","css","map"]}}],"order": 1}]'
+
 export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 ```
 
