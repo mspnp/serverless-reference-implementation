@@ -16,6 +16,7 @@ export const getAdalConfig = () => {
 export const getApiConfig = () =>
 {
   return {
-    url: `${process.env.AZURE_API_URL}`
+    url: `${process.env.AZURE_API_URL}`,
+    version: `/v1`
   };
 }
