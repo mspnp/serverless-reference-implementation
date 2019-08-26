@@ -169,6 +169,17 @@ export COMMIT_SHA1=$(git rev-parse HEAD) && \
 until export PIPELINE_STATUS=$(az pipelines build list --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
 ```
 
+## Configure Dynamic Site Acceleration
+
+```bash
+az cdn endpoint update \
+   -g $RESOURCEGROUP \
+   --profile-name $CDN_NAME \
+   -n $CDN_NAME \
+   --set optimizationType="DynamicSiteAcceleration" \
+   --set probePath="/semver.txt"
+```
+
 ## Update the reply URL for the registered application
 
 > If you're using a tenant different to the tenant associated to the subscription, log in to that tenant. You will need to log in the subscription after creating the application to continue the instructions.
