@@ -64,6 +64,14 @@ export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resourc
 --no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
 --query hostName --output tsv)
 
+# Configure custom caching rules 
+az cdn endpoint update \
+   -g $RESOURCEGROUP \
+   --profile-name $CDN_NAME \
+   -n $CDN_NAME \
+   --set deliveryPolicy.description="" \
+   --set deliveryPolicy.rules='[{"actions": [{"name": "CacheExpiration","parameters": {"cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"extensions": ["js","css","map"]}}],"order": 1}]'
+
 export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 ```
 
@@ -159,6 +167,17 @@ az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-nam
 # monitor until stages are completed
 export COMMIT_SHA1=$(git rev-parse HEAD) && \
 until export PIPELINE_STATUS=$(az pipelines build list --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
+```
+
+## Configure Dynamic Site Acceleration
+
+```bash
+az cdn endpoint update \
+   -g $RESOURCEGROUP \
+   --profile-name $CDN_NAME \
+   -n $CDN_NAME \
+   --set optimizationType="DynamicSiteAcceleration" \
+   --set probePath="/semver.txt"
 ```
 
 ## Update the reply URL for the registered application
