@@ -1,4 +1,4 @@
-# Deploy the Drone Delivery Serverless App
+# Deploy the Drone Delivery Serverless App 
 
 ## Prerequisites
 
