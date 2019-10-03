@@ -274,16 +274,13 @@ az resource create --id $API_POLICY_ID \
 Alternatively, it is possible to have static web content stored by the same storage account used by the CDN, but using an Azure Front Door instead.
 This can be done by configuring a backend pool with a custom host name and having the backend host header set to the URL of the static storage account website.
 
-## Prerequisite
+Prerequisite
 
 1) The storage account has to be a general purpose v2 storage account
+2) For storage account name and resource group name, use the same variables used for installing the serverless client app
 
 ```bash
-Steps:
-
-export RESOURCEGROUP=mgran-serverless
-export STORAGE_ACCOUNT_NAME=serverlessstorageacc
-export AFD_NAME=droneAFD
+export AFD_NAME=<Azure Front Door Name>
 
 
 # Retrieve the static website endpoint
