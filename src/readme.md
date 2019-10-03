@@ -290,6 +290,7 @@ export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
 # Install the Azure Front Door extension
 az extension add --name front-doorHttp
 
+# Create and Configure the Azure Front Door
 az network front-door create --backend-address $WEB_SITE_HOST --name $AFD_NAME --resource-group $RESOURCEGROUP --accepted-protocols Http Https
 ```
 
