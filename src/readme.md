@@ -278,6 +278,7 @@ This can be done by configuring a backend pool with a custom host name and havin
 
 1) The storage account has to be a general purpose v2 storage account
 
+```bash
 Steps:
 
 export RESOURCEGROUP=mgran-serverless
@@ -293,7 +294,7 @@ export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
 az extension add --name front-doorHttp
 
 az network front-door create --backend-address $WEB_SITE_HOST --name $AFD_NAME --resource-group $RESOURCEGROUP --accepted-protocols Http Https
-
+```
 
 ## (Optional) Deploy v2 of GetStatus API
 
