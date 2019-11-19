@@ -270,7 +270,7 @@
         "kind": "functionapp",
         "name": "[concat(variables('droneStatusFunctionAppName'), '/', parameters('slotName'))]",
         "apiVersion": "2016-08-01",
-        "location": "South Central US",
+        "location": "[resourceGroup().location]",
         "scale": null,
         "properties": {
             "enabled": true,
