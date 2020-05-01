@@ -29,7 +29,7 @@ export COSMOSDB_DATABASE_NAME=${APPNAME}-db
 export COSMOSDB_DATABASE_COL=${APPNAME}-col
 ```
 
-> Note: This reference implementation uses Application Insights, an Azure resource that might not be in [all regions](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=monitor).  Ensure to select a region for `APP_INSIGHTS_LOCATION` that supports this resource.
+> Note: This reference implementation uses Application Insights, an Azure resource that might not be available in [all regions](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=monitor). Ensure to select a region for `APP_INSIGHTS_LOCATION` that supports this resource, preferably the same as or nearest region to `LOCATION` for network performance and cost benefits.
 
 Login to Azure CLI and select your subscription.
 
