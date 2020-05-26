@@ -47,7 +47,7 @@ az group create -n $RESOURCEGROUP -l $LOCATION
 Deploy Azure resources.
 
 ```bash
-az group deployment create \
+az deployment group create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-backend-functionapps.json \
    --parameters appName=${APPNAME} \
