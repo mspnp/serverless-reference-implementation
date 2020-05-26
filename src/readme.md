@@ -232,7 +232,7 @@ az login
 ### Configure Azure AD authentication in the Function App
 
 ```bash
-az webapp auth update --resource-group $RESOURCEGROUP --name $APPNAME-ds-funcapp --enabled true \
+az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled true \
 --action LoginWithAzureActiveDirectory \
 --aad-token-issuer-url $ISSUER_URL \
 --aad-client-id $API_APP_ID
