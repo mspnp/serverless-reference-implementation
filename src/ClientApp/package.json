@@ -20,13 +20,13 @@
     "@uifabric/fluent-theme": "^0.16.7",
     "adal-angular": "^1.0.17",
     "axios": "^0.19.0",
-    "gatsby": "^2.13.51",
+    "gatsby": "^2.24.60",
     "office-ui-fabric-react": "^6.176.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6"
   },
   "devDependencies": {
-    "gatsby-plugin-typescript": "^2.0.13",
+    "gatsby-plugin-typescript": "^2.4.20",
     "prettier": "^1.17.0"
   },
   "repository": {

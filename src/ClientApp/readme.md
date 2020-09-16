@@ -97,10 +97,10 @@ git push newremote master
 az extension add --name azure-devops
 
 # export
-AZURE_DEVOPS_ORG_NAME=<devops-org-name>
-AZURE_DEVOPS_ORG=https://dev.azure.com/$AZURE_DEVOPS_ORG_NAME
-AZURE_DEVOPS_PROJECT_NAME=<new-or-existent-project-name>
-AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME=${GITHUB_USER}-srvconn
+export AZURE_DEVOPS_ORG_NAME=<devops-org-name>
+export AZURE_DEVOPS_ORG=https://dev.azure.com/$AZURE_DEVOPS_ORG_NAME
+export AZURE_DEVOPS_PROJECT_NAME=<new-or-existent-project-name>
+export AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME=${GITHUB_USER}-srvconn
 
 # create project or skip this step if you are using an existent Azure DevOps project
 az devops project create \
@@ -126,7 +126,7 @@ az pipelines create \
    --project $AZURE_DEVOPS_PROJECT_NAME \
    --name clientapp-cicd \
    --yml-path src/ClientApp/azure-pipelines.yml \
-   --service-connection $AZURE_GITHUB_SERVICE_CONNECTION_NAME
+   --service-connection $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME \
    --repository-type github \
    --repository $NEW_REMOTE_URL \
    --branch master \
@@ -143,20 +143,19 @@ export APIM_GATEWAY_URL=$(az group deployment show \
                                     --output tsv) 
 
 # create pipeline variables
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureTenantId --value=$TENANT_ID && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureClientId --value=$CLIENT_APP_ID && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiClientId --value=$API_APP_ID && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiUrl --value=$APIM_GATEWAY_URL && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmTenantId --value=$ARM_TENANT_ID && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientId --value=$ARM_SP_CLIENT_ID && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientSecret --value=$ARM_SP_CLIENT_SECRET --secret=true && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureCdnName --value=$CDN_NAME && \
-az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP
-
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureTenantId --value=$TENANT_ID && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureClientId --value=$CLIENT_APP_ID && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiClientId --value=$API_APP_ID && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiUrl --value=$APIM_GATEWAY_URL && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmTenantId --value=$ARM_TENANT_ID && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientId --value=$ARM_SP_CLIENT_ID && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientSecret --value=$ARM_SP_CLIENT_SECRET --secret=true && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureCdnName --value=$CDN_NAME && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP
 # kick off first run
- az pipelines build queue --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
+az pipelines build queue --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
 ```
 
 > Note: from your Azure DevOps organization, please consider enabling the `Multi-stage pipelines preview feature` for a better experience
@@ -166,7 +165,7 @@ az pipelines variable create --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-nam
 ```bash
 # monitor until stages are completed
 export COMMIT_SHA1=$(git rev-parse HEAD) && \
-until export PIPELINE_STATUS=$(az pipelines build list --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
+until export PIPELINE_STATUS=$(az pipelines build list --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
 ```
 
 ## Configure Dynamic Site Acceleration

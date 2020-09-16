@@ -96,7 +96,7 @@ export DRONE_STATUS_FUNCTION_APP_NAME=$(az group deployment show \
 # Publish the function to a local directory
 dotnet publish DroneStatus/dotnet/DroneStatusFunctionApp/ \
        --configuration Release \
-       --output ./../../../dronestatus-publish
+       --output `pwd`/dronestatus-publish
 (cd dronestatus-publish && zip -r DroneStatusFunction.zip *)
 
 # Alternatively, if you have Microsoft Visual Studio installed:
@@ -122,7 +122,7 @@ export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az group deployment show \
 # Publish the function to a local directory
 dotnet publish DroneTelemetry/DroneTelemetryFunctionApp/ \
        --configuration Release \
-       --output ./../../dronetelemetry-publish
+       --output `pwd`/dronetelemetry-publish
 (cd dronetelemetry-publish && zip -r DroneTelemetryFunction.zip *)
 
 # Alternatively, if you have Microsoft Visual Studio installed:
@@ -167,7 +167,7 @@ az group deployment create \
 # list Event Hub namespace name(s)
 export EH_NAMESPACE=$(az eventhubs namespace list \
      -g $RESOURCEGROUP \
-     --query [].name --output tsv)
+     --query '[].name' --output tsv)
 
 # list the send keys
 export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule keys list \
