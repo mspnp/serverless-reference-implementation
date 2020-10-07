@@ -132,11 +132,11 @@
                 "appSettings": [
                     {
                         "name": "AzureWebJobsStorage",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTSHARE",
