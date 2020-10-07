@@ -44,13 +44,6 @@
             "metadata": {
               "description": "Cosmos DB collection name"
             }
-        },
-        "storageSuffix": {
-            "type": "string",
-            "metadata": {
-                "description": "Prefix to use for Storage Account Connection Strings. Only neede on Soverign clouds."
-            },
-            "defaultValue": "core.windows.net"
         }
     },
 	"variables": {
@@ -230,11 +223,11 @@
                 "appSettings": [
                     {
                         "name": "AzureWebJobsStorage",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',parameters('storageSuffix'))]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',parameters('storageSuffix'))]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTSHARE",
@@ -396,11 +389,11 @@
                 "appSettings": [
                     {
                         "name": "AzureWebJobsStorage",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',parameters('storageSuffix'))]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',parameters('storageSuffix'))]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTSHARE",

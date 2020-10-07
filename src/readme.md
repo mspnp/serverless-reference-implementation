@@ -37,11 +37,6 @@ Login to Azure CLI and select your subscription.
 az login
 az account set --subscription <your-subscription-id>
 ```
-If you are running in a sovereign cloud, get the storage endpoint suffix and export it as an environment variable.
-
-```bash
-export STORAGE_ENDPOINT_SUFFIX=(az cloud show --query suffixes.storageEndpoint -tsv|sed 's/\r//')
-```
 
 Create a resource group.
 
@@ -58,8 +53,7 @@ az deployment group create \
    --parameters appName=${APPNAME} \
    appInsightsLocation=${APP_INSIGHTS_LOCATION} \
    cosmosDatabaseName=${COSMOSDB_DATABASE_NAME} \
-   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL} \
-   storageSuffix=${STORAGE_ENDPOINT_SUFFIX}
+   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
 ```
 
 Create Cosmos DB database and collection.
