@@ -223,11 +223,11 @@
                 "appSettings": [
                     {
                         "name": "AzureWebJobsStorage",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneStatusStorageAccountName'), ';AccountKey=', listKeys(variables('droneStatusStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTSHARE",
@@ -389,11 +389,11 @@
                 "appSettings": [
                     {
                         "name": "AzureWebJobsStorage",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryStorageAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryStorageAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     },
                     {
                         "name": "WEBSITE_CONTENTSHARE",
@@ -441,7 +441,7 @@
                     },
                     {
                         "name": "DeadLetterStorage",
-                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryDeadLetterStorageQueueAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryDeadLetterStorageQueueAccountId'),'2015-05-01-preview').key1)]"
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryDeadLetterStorageQueueAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryDeadLetterStorageQueueAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
                     }
                 ]
             }
