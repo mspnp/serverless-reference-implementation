@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System.Security.Claims;
+﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 
 namespace DroneStatusFunctionApp
 {
@@ -21,7 +19,7 @@ namespace DroneStatusFunctionApp
                 log.LogWarning("The principal does not have the required {roles}", string.Join(", ", missingRoles));
                 return false;
             }
-            
+
             return true;
         }
     }
