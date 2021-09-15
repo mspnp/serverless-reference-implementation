@@ -1,10 +1,10 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 	"contentVersion": "1.0.0.0",
     "parameters": {
         "appName": {
             "type": "string",
-            "maxLength": "11",
+            "maxLength": 11,
             "metadata": {
                 "description": "The name for the function app. It must only contain characters and numbers, and be 11 chars long max."
             }
@@ -158,7 +158,7 @@
         "kind": "functionapp",
         "name": "[concat(variables('functionAppName'), '/', parameters('slotName'))]",
         "apiVersion": "2016-08-01",
-        "location": "South Central US",
+        "location": "[resourceGroup().location]",
         "scale": null,
         "properties": {
             "enabled": true,
@@ -189,6 +189,5 @@
     }
     ],
 	"outputs": {
-
 	}
 }
