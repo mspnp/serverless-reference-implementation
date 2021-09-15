@@ -1,15 +1,15 @@
-﻿namespace Serverless.Simulator
-{
-    using Microsoft.Azure.EventHubs;
-    using Serverless.Serialization.Models;
-    using Serverless.Serialization;
-    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Threading.Tasks.Dataflow;
+﻿using Serverless.Serialization.Models;
+using Serverless.Serialization;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using Microsoft.Azure.EventHubs;
 
+namespace Serverless.Simulator
+{
     class Program
     {
         public const int SimulatedDelayBetweenMessages = 1000;
