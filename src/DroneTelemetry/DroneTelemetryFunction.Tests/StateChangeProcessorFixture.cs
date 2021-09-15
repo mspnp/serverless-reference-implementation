@@ -2,6 +2,7 @@
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
@@ -68,7 +69,8 @@ namespace DroneTelemetryFunction.Tests
         {
             var client = CreateMockClient(null);
 
-            var processor = new StateChangeProcessor(client.Object, "db", "col");
+            var option = new StateChangeProcessorOptions { COSMOSDB_DATABASE_COL = "col", COSMOSDB_DATABASE_NAME = "db" };
+            var processor = new StateChangeProcessor(client.Object, Options.Create<StateChangeProcessorOptions>(option));
             var logger = new Mock<ILogger>();
 
             var updatedState = new DeviceState();
@@ -89,7 +91,8 @@ namespace DroneTelemetryFunction.Tests
             doc1.SetPropertyValue("Battery", 0.5);
             var client = CreateMockClient(doc1);
 
-            var processor = new StateChangeProcessor(client.Object, "db", "col");
+            var option = new StateChangeProcessorOptions { COSMOSDB_DATABASE_COL = "col", COSMOSDB_DATABASE_NAME = "db" };
+            var processor = new StateChangeProcessor(client.Object, Options.Create<StateChangeProcessorOptions>(option));
             var logger = new Mock<ILogger>();
 
             var update = new DeviceState();

@@ -1,11 +1,7 @@
 using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Azure.Documents;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using Serverless.Serialization;
-using Serverless.Serialization.Models;
 using System;
 using System.Threading.Tasks;
 
@@ -28,7 +24,7 @@ namespace DroneTelemetryFunctionApp
         [FunctionName("RawTelemetryFunction")]
         [StorageAccount("DeadLetterStorage")]
         public async Task RunAsync(
-            [EventHubTrigger("%EventHubName%", Connection = "EventHubConnection", ConsumerGroup ="%EventHubConsumerGroup%")]EventData[] messages,
+            [EventHubTrigger("%EventHubName%", Connection = "EventHubConnection", ConsumerGroup = "%EventHubConsumerGroup%")] EventData[] messages,
             [Queue("deadletterqueue")] IAsyncCollector<DeadLetterMessage> deadLetterMessages,
             ILogger logger)
         {

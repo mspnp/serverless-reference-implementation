@@ -2,9 +2,7 @@
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Linq;
 using System.Threading.Tasks;
-
 
 namespace DroneTelemetryFunctionApp
 {

@@ -4,7 +4,7 @@ using Serverless.Serialization.Models;
 
 namespace DroneTelemetryFunctionApp
 {
-     public class TelemetryProcessor : ITelemetryProcessor
+    public class TelemetryProcessor : ITelemetryProcessor
     {
         private readonly ITelemetrySerializer<DroneState> serializer;
 

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Azure.EventHubs;
+﻿using Microsoft.Azure.EventHubs;
+using System;
 
 namespace DroneTelemetryFunctionApp
 {
