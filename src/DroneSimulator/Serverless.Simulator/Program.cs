@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Microsoft.Azure.EventHubs;
+using Azure.Messaging.EventHubs.Producer;
+using Azure.Messaging.EventHubs;
 
 namespace Serverless.Simulator
 {
@@ -18,7 +19,7 @@ namespace Serverless.Simulator
         private const string DevicesPrefix = "drone-";
 
         private static async Task GenerateTelemetryAsync<T>(Func<T, string, bool, T> factory,
-            ObjectPool<EventHubClient> pool, TelemetrySerializer<T> serializer, int randomSeed, AsyncConsole console, int generateKeyframeGap, int simulatedDelayInMs, int waittime, string deviceId) where T : class
+            ObjectPool<EventHubProducerClient> pool, TelemetrySerializer<T> serializer, int randomSeed, AsyncConsole console, int generateKeyframeGap, int simulatedDelayInMs, int waittime, string deviceId) where T : class
         {
 
             if (factory == null)
@@ -61,7 +62,7 @@ namespace Serverless.Simulator
                 {
                     using (var client = pool.GetObject())
                     {
-                        return client.Value.SendAsync(new EventData(serializer.Serialize(t))).ContinueWith(
+                        return client.Value.SendAsync(new[] { new EventData(serializer.Serialize(t)) }).ContinueWith(
                             async task =>
                             {
                                 cts.Cancel();
@@ -228,7 +229,7 @@ namespace Serverless.Simulator
             try
             {
                 var (EventHubConnectionString, MillisecondsToRun, GenerateKeyframeGap, NumberOfDevices) = ParseArguments();
-                var eventHubClient = EventHubClient.CreateFromConnectionString(EventHubConnectionString);
+                var eventHubClient = new EventHubProducerClient(EventHubConnectionString);
                 cts = MillisecondsToRun == 0 ? new CancellationTokenSource() : new CancellationTokenSource(MillisecondsToRun);
 
                 Console.CancelKeyPress += (s, e) =>
@@ -240,12 +241,12 @@ namespace Serverless.Simulator
 
                 AsyncConsole console = new AsyncConsole(cts.Token);
 
-                var eventHubClientPool = new ObjectPool<EventHubClient>(() => EventHubClient.CreateFromConnectionString(EventHubConnectionString), 100);
+                var eventHubClientPool = new ObjectPool<EventHubProducerClient>(() => new EventHubProducerClient(EventHubConnectionString), 100);
 
                 var tasks = new List<Task>();
                 for (int i = 0; i < NumberOfDevices; i++)
                 {
-                    tasks.Add(GenerateTelemetryAsync(TelemetryGenerator.GetTimeElapsedTelemetry, eventHubClientPool, new TelemetrySerializer<DroneState>(), 100, console, GenerateKeyframeGap, SimulatedDelayBetweenMessages, 1000, DevicesPrefix+i));
+                    tasks.Add(GenerateTelemetryAsync(TelemetryGenerator.GetTimeElapsedTelemetry, eventHubClientPool, new TelemetrySerializer<DroneState>(), 100, console, GenerateKeyframeGap, SimulatedDelayBetweenMessages, 1000, DevicesPrefix + i));
                 }
 
                 tasks.Add(console.WriterTask);
