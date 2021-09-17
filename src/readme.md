@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [.NET Core 2.1](https://www.microsoft.com/net/download)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.0.69 or higher
+- [.NET Core 3.1 and .NET 5.0](https://www.microsoft.com/net/download)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.27.1 or higher
 - [SED](https://www.gnu.org/software/sed/)
 
 Clone or download this repo locally.
@@ -13,14 +13,13 @@ git clone https://github.com/mspnp/serverless-reference-implementation.git
 cd serverless-reference-implementation/src
 ```
 
-These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) . 
-
+These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) .
 
 ## Deploy Azure resources
 
 Export the following environment variables:
 
-``` bash
+```bash
 export LOCATION=<location>
 export RESOURCEGROUP=<resource-group>
 export APPNAME=<functionapp-name> # Cannot be more than 6 characters
@@ -60,25 +59,25 @@ Create Cosmos DB database and collection.
 
 ```bash
 # Get the Cosmos DB account name from the deployment output
-export COSMOSDB_DATABASE_ACCOUNT=$(az group deployment show \
+export COSMOSDB_DATABASE_ACCOUNT=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.cosmosDatabaseAccount.value \
-                                    -o tsv) 
+                                    -o tsv)
 
 # Create the Cosmos DB database
-az cosmosdb database create \
+az cosmosdb sql database create \
    -g $RESOURCEGROUP \
-   -n $COSMOSDB_DATABASE_ACCOUNT \
-   -d $COSMOSDB_DATABASE_NAME
+   -a $COSMOSDB_DATABASE_ACCOUNT \
+   -n $COSMOSDB_DATABASE_NAME
 
 # Create the collection
-az cosmosdb collection create \
+az cosmosdb sql container create \
    -g $RESOURCEGROUP \
-   -n $COSMOSDB_DATABASE_ACCOUNT \
+   -a $COSMOSDB_DATABASE_ACCOUNT \
    -d $COSMOSDB_DATABASE_NAME \
-   -c $COSMOSDB_DATABASE_COL \
-   --partition-key-path /id --throughput 10000
+   -n $COSMOSDB_DATABASE_COL \
+   --partition-key-path /id --max-throughput 5000
 ```
 
 ## Publish Azure Function Apps
@@ -87,11 +86,11 @@ Deploy the drone status function
 
 ```bash
 ## Get the functiona app name from the deployment output
-export DRONE_STATUS_FUNCTION_APP_NAME=$(az group deployment show \
+export DRONE_STATUS_FUNCTION_APP_NAME=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.droneStatusFunctionAppName.value \
-                                    -o tsv) 
+                                    -o tsv)
 
 # Publish the function to a local directory
 dotnet publish DroneStatus/dotnet/DroneStatusFunctionApp/ \
@@ -113,11 +112,11 @@ Deploy the drone telemetry function
 
 ```bash
 ## Get the functiona app name from the deployment output
-export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az group deployment show \
+export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.droneTelemetryFunctionAppName.value \
-                                    -o tsv) 
+                                    -o tsv)
 
 # Publish the function to a local directory
 dotnet publish DroneTelemetry/DroneTelemetryFunctionApp/ \
@@ -137,12 +136,12 @@ az functionapp deployment source config-zip \
 
 ## Deploy the API Management gateway
 
-Get the function key for the DroneStatus function. 
+Get the function key for the DroneStatus function.
 
 1. Open the Azure portal
-2. Navigate to the resource group and open the blade for the DroneStatus function
-3. Click **Manage**.
-4. Under **Function Keys**, click **Copy**
+2. Navigate to the resource group and open the DroneStatus function app
+3. Click **Fuctions** and then select **GetStatusFunction**.
+4. Under **Function Keys**, copy the default value
 
 Deploy API Management
 
@@ -151,15 +150,14 @@ export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
 
 export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
 
-az group deployment create \
+# This takes more than 1hs to execute
+az deployment group create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-apim.json \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}
 ```
-
-> Allow 20-30 minutes for this step to complete.
 
 ## Build and run the device simulator
 
@@ -183,13 +181,15 @@ dotnet build $SIMULATOR_PROJECT_PATH
 dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
-The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, expand the **Monitor** tab, and click on any of the logs.
+The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select **RawTelemetryFunction**, expand the **Monitor** tab, and click on any of the logs.
+Also, you can see the database, which will be populated by the drone status.
 
 ## Enable authentication in the function app
 
 This step creates a new app registration for the API in Azure AD, and enables OIDC authentication in the function app.
 
 ### Register the application in Azure AD
+
 If you're planning on using the tenant associated to your Azure subscription you can retrieve it.
 
 ```bash
@@ -227,6 +227,7 @@ Log back into your subscription if you've used a different tenant.
 
 ```bash
 az login
+az account set --subscription <your-subscription-id>
 ```
 
 ### Configure Azure AD authentication in the Function App
@@ -239,6 +240,7 @@ az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCT
 ```
 
 ### Assign application to user or role
+
 This is required for the admin user who will need to be authenticated to use the Azure Function.
 
 1. In the Azure Portal, navigate to your Azure AD tenant.
@@ -248,7 +250,7 @@ This is required for the admin user who will need to be authenticated to use the
 5. Click **Users and groups**.
 6. Select a user, and click **Select**.
 
-    > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
+   > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
 
 7. Click **Assign**.
 
@@ -259,11 +261,11 @@ Follow the instructions [here](./ClientApp/readme.md) to deploy the SPA. Make su
 Next, update the policies in the API Management gateway. This update adds the CDN endpoint URL as an allowed origin for the CORS configuration, and enables authentication for tokens issued for the registered application for the API.
 
 ```bash
-export API_MANAGEMENT_SERVICE=$(az group deployment show \
+export API_MANAGEMENT_SERVICE=$(az deployment group show \
                                     --resource-group ${RESOURCEGROUP} \
                                     --name azuredeploy-apim \
                                     --query properties.outputs.apimGatewayServiceName.value \
-                                    --output tsv) 
+                                    --output tsv)
 export API_POLICY_ID="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv1/policies/policy"
 az resource create --id $API_POLICY_ID \
     --properties "{
@@ -278,8 +280,8 @@ This can be done by configuring a backend pool with a custom host name and havin
 
 Prerequisite
 
-1) The storage account has to be a general purpose v2 storage account
-2) For storage account name and resource group name, use the same variables used for installing the serverless client app
+1. The storage account has to be a general purpose v2 storage account
+2. For storage account name and resource group name, use the same variables used for installing the serverless client app
 
 ```bash
 export AFD_NAME=<Azure Front Door Name>
