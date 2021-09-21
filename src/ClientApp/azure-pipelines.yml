@@ -13,7 +13,7 @@ stages:
   - job: WebsiteBuild
     displayName: Build Fabrikam Drone Status app using Gatbsyjs
     pool:
-      vmImage: 'Ubuntu-16.04'
+      vmImage: 'ubuntu-20.04'
     continueOnError: false
     steps:
     - task: NodeTool@0
@@ -45,9 +45,9 @@ stages:
 
     - script: |
         cd $(Build.SourcesDirectory)
-        echo $(docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.0.1-linux-netcoreapp2.1 /repo) > .gitversion
-        echo $(cat .gitversion | grep -oP '(?<="MajorMinorPatch":")[^"]*') > src/ClientApp/public/version.txt
-        echo $(cat .gitversion | grep -oP '(?<="FullSemVer":")[^"]*' | sed -e "s/\+/-/g") > src/ClientApp/public/semver.txt
+        echo $(docker run --rm -v "$(pwd):/repo" gittools/gitversion:5.6.10-alpine.3.12-x64-3.1 /repo) > .gitversion
+        echo $(cat .gitversion | grep -oP '(?<="MajorMinorPatch": ")[^"]*') > src/ClientApp/public/version.txt
+        echo $(cat .gitversion | grep -oP '(?<="FullSemVer": ")[^"]*' | sed -e "s/\+/-/g") > src/ClientApp/public/semver.txt
       displayName: 'bump version'
 
     - task: PublishBuildArtifacts@1
@@ -61,7 +61,7 @@ stages:
   - deployment: WebsiteDeploy
     displayName: Deploy Fabrikam Drone Status app
     pool:
-      vmImage: 'Ubuntu-16.04'
+      vmImage: 'ubuntu-20.04'
     environment: 'fabrikamdronestatus-prod'
     strategy:
       runOnce:
@@ -96,9 +96,3 @@ stages:
               echo "Azure CDN endpooint host ${AZURE_CDN_ENDPOINT_HOSTNAME}"
               echo '##vso[task.setvariable variable=azureCndEndpointHost]'$AZURE_CDN_ENDPOINT_HOSTNAME
             displayName: 'upload to Azure Storage static website hosting and purge Azure CDN endpoint'
-          
-          - script: |
-              liveVersion=$(curl --fail --silent "https://$(azureCndEndpointHost)/semver.txt")
-              [[ $liveVersion == $(releaseSemVer) ]] && echo -e "\033[1;32m## [Passed] website validation Ok: $liveVersion is live now\033[0m" || >&2 echo -e "\033[0;31m## [Fail] website validation Fail: expected $(releaseSemVer) - actual $liveVersion\033[0m"
-            displayName: 'validate website version'
-            failOnStderr: true
