@@ -113,7 +113,6 @@ const App: React.FunctionComponent = () => {
         },
       }}
       gap={15}>
-      {auth.handleLoginCallback()}
       <Stack.Item align="end">
         <LoginActionButton />
       </Stack.Item>
