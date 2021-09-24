@@ -19,10 +19,12 @@ export CLIENT_APP_NAME=<app name>
 
 # Create the application registration, requesting permission to access the Graph API and to impersonate a user when calling the drone status API
 export API_IMPERSONATION_PERMISSION=$(az ad app show --id $API_APP_ID --query "oauth2Permissions[?value == 'user_impersonation'].id" --output tsv)
-export CLIENT_APP_ID=$(az ad app create --display-name $CLIENT_APP_NAME --oauth2-allow-implicit-flow true \
---native-app false --reply-urls http://localhost --identifier-uris "http://$CLIENT_APP_NAME" \
---required-resource-accesses "  [ { \"resourceAppId\": \"$API_APP_ID\", \"resourceAccess\": [ { \"id\": \"$API_IMPERSONATION_PERMISSION\", \"type\": \"Scope\" } ] }, { \"resourceAppId\": \"00000003-0000-0000-c000-000000000000\", \"resourceAccess\": [ { \"id\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\", \"type\": \"Scope\" } ] } ]" \
---query appId --output tsv)
+export SP_RESPONSE=$(az ad app create --display-name $CLIENT_APP_NAME \
+--native-app false --identifier-uris "http://$CLIENT_APP_NAME" \
+--required-resource-accesses "  [ { \"resourceAppId\": \"$API_APP_ID\", \"resourceAccess\": [ { \"id\": \"$API_IMPERSONATION_PERMISSION\", \"type\": \"Scope\" } ] }, { \"resourceAppId\": \"00000003-0000-0000-c000-000000000000\", \"resourceAccess\": [ { \"id\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\", \"type\": \"Scope\" } ] } ]" )
+
+export CLIENT_APP_ID=$(echo $SP_RESPONSE | jq ".appId" -r)
+export CLIENT_APP_OBJECT_ID=$(echo $SP_RESPONSE | jq ".objectId" -r)
 
 # Create a service principal for the registered application
 az ad sp create --id $CLIENT_APP_ID
@@ -117,7 +119,7 @@ export ARM_SP_CLIENT_SECRET=$(echo $SP_DETAILS | jq ".password" -r)
 
 ## Create multi-stage YAML pipeline
 
-You must create a service connection with name  defined by `echo $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME`
+You must create a service connection with name defined by `echo $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME`
 For [create a service connection follow the document](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#create-a-service-connection). Choose a github connection base on personal token. Here documentation about how to get the [personal token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 ```
@@ -192,7 +194,9 @@ az login --tenant $TENANT_ID --allow-no-subscriptions
 ```
 
 ```bash
-az ad app update --id $CLIENT_APP_ID --set replyUrls="[\"$CLIENT_URL\"]"
+az rest --method PATCH --uri 'https://graph.microsoft.com/v1.0/applications/'$OBJECT_ID \
+    --headers 'Content-Type=application/json' \
+    --body '{"spa":{"redirectUris":[\"$CLIENT_URL\"]}}'
 ```
 
 > Log back into your subscription if you've used a different tenant.

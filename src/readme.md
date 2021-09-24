@@ -217,6 +217,7 @@ export API_APP_ID=$(az ad app create --display-name $API_APP_NAME --oauth2-allow
 --app-roles '  [ {  "allowedMemberTypes": [ "User" ], "description":"Access to device status", "displayName":"Get Device Status", "isEnabled":true, "value":"GetStatus" }]' \
 --required-resource-accesses '  [ {  "resourceAppId": "00000003-0000-0000-c000-000000000000", "resourceAccess": [ { "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d", "type": "Scope" } ] }]' \
 --query appId --output tsv)
+export IDENTIFIER_URI=$(az ad app show --id $API_APP_ID --query identifierUris[0] -o tsv)
 
 # Create a service principal for the registered application
 az ad sp create --id $API_APP_ID
@@ -236,7 +237,8 @@ az account set --subscription <your-subscription-id>
 az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled true \
 --action LoginWithAzureActiveDirectory \
 --aad-token-issuer-url $ISSUER_URL \
---aad-client-id $API_APP_ID
+--aad-client-id $API_APP_ID \
+--aad-allowed-token-audiences $IDENTIFIER_URI
 ```
 
 ### Assign application to user or role
@@ -269,33 +271,8 @@ export API_MANAGEMENT_SERVICE=$(az deployment group show \
 export API_POLICY_ID="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv1/policies/policy"
 az resource create --id $API_POLICY_ID \
     --properties "{
-        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$API_APP_ID</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
+        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"
-```
-
-## (Optional) Use an Azure Front Door as alternative to CDN
-
-Alternatively, it is possible to have static web content stored by the same storage account used by the CDN, but using an Azure Front Door instead.
-This can be done by configuring a backend pool with a custom host name and having the backend host header set to the URL of the static storage account website.
-
-Prerequisite
-
-1. The storage account has to be a general purpose v2 storage account
-2. For storage account name and resource group name, use the same variables used for installing the serverless client app
-
-```bash
-export AFD_NAME=<Azure Front Door Name>
-
-
-# Retrieve the static website endpoint
-export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --query primaryEndpoints.web --output tsv)
-export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
-
-# Install the Azure Front Door extension
-az extension add --name front-doorHttp
-
-# Create and Configure the Azure Front Door
-az network front-door create --backend-address $WEB_SITE_HOST --name $AFD_NAME --resource-group $RESOURCEGROUP --accepted-protocols Http Https
 ```
 
 ## (Optional) Deploy v2 of GetStatus API
