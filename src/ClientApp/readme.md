@@ -194,9 +194,7 @@ az login --tenant $TENANT_ID --allow-no-subscriptions
 ```
 
 ```bash
-az rest --method PATCH --uri 'https://graph.microsoft.com/v1.0/applications/'$OBJECT_ID \
-    --headers 'Content-Type=application/json' \
-    --body '{"spa":{"redirectUris":[\"$CLIENT_URL\"]}}'
+az rest --method PATCH --uri 'https://graph.microsoft.com/v1.0/applications/'$CLIENT_APP_OBJECT_ID --headers 'Content-Type=application/json' --body '{"spa":{"redirectUris":["'$CLIENT_URL'"]}}'
 ```
 
 > Log back into your subscription if you've used a different tenant.
