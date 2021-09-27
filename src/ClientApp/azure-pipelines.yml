@@ -28,6 +28,7 @@ stages:
         AZURE_CLIENT_ID=$(azureClientId)
         AZURE_API_CLIENT_ID=$(azureApiClientId)
         AZURE_API_URL=$(azureApiUrl)
+        ACCESS_TOKEN_SCOPE=$(accessTokenScope)
         EOF
       displayName: 'configure azure tenant, client and api details'
 

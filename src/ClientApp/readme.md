@@ -159,7 +159,8 @@ az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_D
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME && \
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureCdnName --value=$CDN_NAME && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=accessTokenScope --value=${IDENTIFIER_URI}/user_impersonation
 # kick off first run
 az pipelines build queue --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
 ```

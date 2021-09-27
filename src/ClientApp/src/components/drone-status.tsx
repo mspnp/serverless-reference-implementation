@@ -100,9 +100,6 @@ export class DroneStatusDetailsList extends React.Component<
   // This data is fetched at run time on the client.
   fetchDroneStatusById = (id) => {
     auth.acquireTokenForAPI((error, token) => {
-      console.log("inside");
-      console.log(error);
-      console.log(token.accessToken);
       if (error) {
         this.handleRequestError(error);
         return;
@@ -136,7 +133,6 @@ export class DroneStatusDetailsList extends React.Component<
           });
         })
         .catch((error) => {
-          console.log(error);
           this.handleRequestError(error);
         });
     });

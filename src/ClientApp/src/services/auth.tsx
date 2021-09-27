@@ -3,9 +3,18 @@
 // Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 const isBrowser = () => typeof window !== "undefined";
-const { msalInstance } = !isBrowser() ? null : require("./msal");
+import { accessTokenScope } from "./config";
+const { msalInstance } = !isBrowser()
+  ? {
+      msalInstance: {
+        getAllAccounts: () => {
+          return [];
+        },
+        setActiveAccount: (x: any) => {},
+      },
+    }
+  : require("./msal");
 
-let accountId = "";
 interface Auth {
   login(): void;
   isLoggedIn(): boolean;
@@ -15,11 +24,11 @@ interface Auth {
 }
 
 var loginRequest = {
-  scopes: ["user.read", "mail.send", "http://testdronapi/user_impersonation"],
+  scopes: ["user.read", "mail.send", accessTokenScope],
 };
 
 var request = {
-  scopes: ["http://testdronapi/user_impersonation"],
+  scopes: [accessTokenScope],
 };
 
 export const auth: Auth = {
@@ -55,7 +64,6 @@ export const auth: Auth = {
     : () => {},
   acquireTokenForAPI: msalInstance
     ? (func) => {
-        console.log("acquireTokenForAPI");
         msalInstance
           .acquireTokenSilent(request)
           .then((token) => func(null, token))
