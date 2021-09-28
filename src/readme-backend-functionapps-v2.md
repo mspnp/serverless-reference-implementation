@@ -6,26 +6,18 @@
 # export the following environment variables
 export RESOURCEGROUP=<resource-group>
 export APPNAME=<functionapp-name>
+export COSMOSDB_DATABASE_NAME=${APPNAME}-db
+export COSMOSDB_DATABASE_COL=${APPNAME}-col
 ```
 
 ## step 2
 
 ```bash
 # export the following exports
-export COSMOSDB_DATABASE_ACCOUNT=$(az group deployment show \
+export COSMOSDB_DATABASE_ACCOUNT=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.cosmosDatabaseAccount.value \
-                                    -o tsv) && \
-export COSMOSDB_DATABASE_NAME=$(az group deployment show \
-                                    -g ${RESOURCEGROUP} \
-                                    -n azuredeploy-backend-functionapps \
-                                    --query properties.outputs.cosmosDatabaseName.value \
-                                    -o tsv) && \
-export COSMOSDB_DATABASE_COL=$(az group deployment show \
-                                    -g ${RESOURCEGROUP} \
-                                    -n azuredeploy-backend-functionapps \
-                                    --query properties.outputs.cosmosDatabaseCollection.value \
                                     -o tsv)
 ```
 
@@ -33,7 +25,7 @@ export COSMOSDB_DATABASE_COL=$(az group deployment show \
 
 ```bash
 # create function app
-az group deployment create \
+az deployment group create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-backend-functionapps-v2.json \
    --parameters appName=${APPNAME} \

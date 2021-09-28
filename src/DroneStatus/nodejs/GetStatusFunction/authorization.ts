@@ -4,7 +4,7 @@ const clientPrincipalHeaderKey = 'X-MS-CLIENT-PRINCIPAL';
 
 function handleIfAuthorizedForRoles(req, roles, handler, logger) {
     return handleIfAuthorizedByClaims(req, claims => {
-        const principalRoles = claims.filter(obj => obj.val == roles).map(role => role.val);
+        const principalRoles = claims.filter(obj => obj.typ === "roles").map(roles => roles.val);
         const missingRoles = roles.filter(r => principalRoles.indexOf(r) < 0);
         if (missingRoles.length > 0) {
             logger.warn('The principal does not have the required roles %s', missingRoles.join(', '));

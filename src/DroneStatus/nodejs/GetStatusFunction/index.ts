@@ -1,5 +1,19 @@
-module.exports = function (context, req, getStatusById) {
-    var authUtils = require('./authorization');
+import { AzureFunction, Context, HttpRequest } from "@azure/functions"
+
+interface IDroneStatus {
+    id: number;
+    Battery: number;
+    FlightMode: number,
+    Latitude: number,
+    Longitude: number,
+    Altitude: number,
+    GyrometerOK: boolean,
+    AccelerometerOK: boolean,
+    MagnetometerOK: boolean
+}
+
+const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest, getStatusById: IDroneStatus): Promise<void> {
+    const authUtils = require('./authorization');
     context.log('Processing getStatus request.');
 
     if (!req.query['deviceId']) {
@@ -36,3 +50,5 @@ module.exports = function (context, req, getStatusById) {
 
     context.done();
 };
+
+export default httpTrigger;
