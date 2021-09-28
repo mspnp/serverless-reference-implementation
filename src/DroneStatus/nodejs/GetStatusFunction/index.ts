@@ -40,7 +40,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             context.log("Device found, response: " + jsonResponse);
             return {
                 status: 200, /* Defaults to 200 */
-                body: { body: jsonResponse },
+                body: jsonResponse,
                 headers: {
                     'Content-Type': 'application/json'
                 }
