@@ -55,7 +55,7 @@ az deployment group create \
    cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
 ```
 
-Create Cosmos DB database and collection.
+Create Cosmos DB database and collection. This resource is one of the most expensive, in order to take care the cost in the current reference implementation the container has throughput set to autoscale with a maximum 5000 throughput unites, this would be enough for the current example. In production, the configuration need to be appropriate to process the telemetry. 
 
 ```bash
 # Get the Cosmos DB account name from the deployment output
