@@ -6,5 +6,13 @@
       "prefetchCount": 2000,
       "batchCheckpointFrequency": 1
     }
+  },
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
+    }
   }
 }

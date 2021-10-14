@@ -112,7 +112,7 @@
         }
     },
     {
-        "apiVersion": "2015-08-01",
+        "apiVersion": "2021-01-15",
         "type": "Microsoft.Web/sites",
         "name": "[variables('droneStatusFunctionAppName')]",
         "location": "[resourceGroup().location]",
@@ -144,7 +144,7 @@
                     },
                     {
                         "name": "FUNCTIONS_EXTENSION_VERSION",
-                        "value": "~2"
+                        "value": "~3"
                     },
                     {
                         "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
@@ -172,7 +172,7 @@
                     },
                     {
                         "name": "WEBSITE_NODE_DEFAULT_VERSION",
-                        "value": "8.11.1"
+                        "value": "~14"
                     },
                     {
                         "name": "FUNCTIONS_WORKER_RUNTIME",

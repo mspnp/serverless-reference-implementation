@@ -1,4 +1,4 @@
-namespace DroneTelemetryFunctionApp
+﻿namespace DroneTelemetryFunctionApp
 {
     public class StateChangeProcessorOptions
     {

@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
- - [Azure CLI 2.0.69 or later](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
- - [Azure DevOps account](https://azure.microsoft.com/services/devops)
+- [Azure CLI 2.27.1 or later](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- [Azure DevOps account](https://azure.microsoft.com/services/devops)
 
-##  Register an application with your Azure Active Directory tenant
+## Register an application with your Azure Active Directory tenant
 
 > If you're using a tenant different to the tenant associated to the subscription, log in to that tenant. You will need to log in the subscription after creating the application to continue the instructions.
 
@@ -17,12 +17,14 @@ az login --tenant $TENANT_ID --allow-no-subscriptions
 # Specify the new app name
 export CLIENT_APP_NAME=<app name>
 
-# Create the application registration, requesting permission to access the Graph API and to impersonate a user when calling the drone status API 
+# Create the application registration, requesting permission to access the Graph API and to impersonate a user when calling the drone status API
 export API_IMPERSONATION_PERMISSION=$(az ad app show --id $API_APP_ID --query "oauth2Permissions[?value == 'user_impersonation'].id" --output tsv)
-export CLIENT_APP_ID=$(az ad app create --display-name $CLIENT_APP_NAME --oauth2-allow-implicit-flow true \
---native-app false --reply-urls http://localhost --identifier-uris "http://$CLIENT_APP_NAME" \
---required-resource-accesses "  [ { \"resourceAppId\": \"$API_APP_ID\", \"resourceAccess\": [ { \"id\": \"$API_IMPERSONATION_PERMISSION\", \"type\": \"Scope\" } ] }, { \"resourceAppId\": \"00000003-0000-0000-c000-000000000000\", \"resourceAccess\": [ { \"id\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\", \"type\": \"Scope\" } ] } ]" \
---query appId --output tsv)
+export SP_RESPONSE=$(az ad app create --display-name $CLIENT_APP_NAME \
+--native-app false --identifier-uris "http://$CLIENT_APP_NAME" \
+--required-resource-accesses "  [ { \"resourceAppId\": \"$API_APP_ID\", \"resourceAccess\": [ { \"id\": \"$API_IMPERSONATION_PERMISSION\", \"type\": \"Scope\" } ] }, { \"resourceAppId\": \"00000003-0000-0000-c000-000000000000\", \"resourceAccess\": [ { \"id\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\", \"type\": \"Scope\" } ] } ]" )
+
+export CLIENT_APP_ID=$(echo $SP_RESPONSE | jq ".appId" -r)
+export CLIENT_APP_OBJECT_ID=$(echo $SP_RESPONSE | jq ".objectId" -r)
 
 # Create a service principal for the registered application
 az ad sp create --id $CLIENT_APP_ID
@@ -33,6 +35,7 @@ az ad sp update --id $CLIENT_APP_ID --add tags "WindowsAzureActiveDirectoryInteg
 
 ```bash
 az login
+az account set --subscription <your-subscription-id>
 ```
 
 ## Create Azure Storage static website hosting
@@ -40,7 +43,7 @@ az login
 ```bash
 export STORAGE_ACCOUNT_NAME=<storage account name>
 
-# Create the storage account 
+# Create the storage account
 az storage account create --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --location $LOCATION --kind StorageV2
 
 # Enable static web site support for the storage account
@@ -64,13 +67,13 @@ export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resourc
 --no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
 --query hostName --output tsv)
 
-# Configure custom caching rules 
+# Configure custom caching rules
 az cdn endpoint update \
    -g $RESOURCEGROUP \
    --profile-name $CDN_NAME \
    -n $CDN_NAME \
    --set deliveryPolicy.description="" \
-   --set deliveryPolicy.rules='[{"actions": [{"name": "CacheExpiration","parameters": {"cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"extensions": ["js","css","map"]}}],"order": 1}]'
+   --set deliveryPolicy.rules='[{"actions": [{"name": "CacheExpiration","parameters": {"cacheType":"All","cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"operator":"Any","matchValues": ["js","css","map"]}}],"order": 1}]'
 
 export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 ```
@@ -116,17 +119,20 @@ export ARM_SP_CLIENT_SECRET=$(echo $SP_DETAILS | jq ".password" -r)
 
 ## Create multi-stage YAML pipeline
 
+You must create a service connection with name defined by `echo $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME`
+For [create a service connection follow the document](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#create-a-service-connection). Choose a github connection base on personal token. Here documentation about how to get the [personal token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+
 ```
 # export Azure DevOps resources
 export AZURE_DEVOPS_PROJECT_ID=$(az devops project show --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --query id -o tsv)
 
 # add build definition (some info could be requested during this process)
+# The command will give you the service connection options. Please, choose the one already created.
 az pipelines create \
    --organization $AZURE_DEVOPS_ORG \
    --project $AZURE_DEVOPS_PROJECT_NAME \
    --name clientapp-cicd \
    --yml-path src/ClientApp/azure-pipelines.yml \
-   --service-connection $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME \
    --repository-type github \
    --repository $NEW_REMOTE_URL \
    --branch master \
@@ -136,11 +142,11 @@ az pipelines create \
 ## Create variables and kickoff first CI/CD run
 
 ```bash
-export APIM_GATEWAY_URL=$(az group deployment show \
+export APIM_GATEWAY_URL=$(az deployment group show \
                                     --resource-group ${RESOURCEGROUP} \
                                     --name azuredeploy-apim \
                                     --query properties.outputs.apimGatewayURL.value \
-                                    --output tsv) 
+                                    --output tsv)
 
 # create pipeline variables
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureTenantId --value=$TENANT_ID && \
@@ -153,7 +159,8 @@ az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_D
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME && \
 az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureCdnName --value=$CDN_NAME && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP && \
+az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=accessTokenScope --value=${IDENTIFIER_URI}/user_impersonation
 # kick off first run
 az pipelines build queue --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
 ```
@@ -188,18 +195,19 @@ az login --tenant $TENANT_ID --allow-no-subscriptions
 ```
 
 ```bash
-az ad app update --id $CLIENT_APP_ID --set replyUrls="[\"$CLIENT_URL\"]"
+az rest --method PATCH --uri 'https://graph.microsoft.com/v1.0/applications/'$CLIENT_APP_OBJECT_ID --headers 'Content-Type=application/json' --body '{"spa":{"redirectUris":["'$CLIENT_URL'"]}}'
 ```
 
 > Log back into your subscription if you've used a different tenant.
 
 ```bash
 az login
+az account set --subscription <your-subscription-id>
 ```
 
 ## Launch the application granting consent
 
-The first time you use the client application you need to consent to the delegated permissions specified for the application, unless an administrator granted consent for all users in the directory. 
+The first time you use the client application you need to consent to the delegated permissions specified for the application, unless an administrator granted consent for all users in the directory.
 
 For single-page applications, user consent can be granted by navigating to an Azure AD URL as specified below; the web site will request a user login and consent for the application. To actually use the application, you need to complete the rest of the deployment instructions to complete the configuration.
 

@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [.NET Core 2.1](https://www.microsoft.com/net/download)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.0.69 or higher
+- [.NET Core 3.1 and .NET 5.0](https://www.microsoft.com/net/download)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.27.1 or higher
 - [SED](https://www.gnu.org/software/sed/)
 
 Clone or download this repo locally.
@@ -13,14 +13,13 @@ git clone https://github.com/mspnp/serverless-reference-implementation.git
 cd serverless-reference-implementation/src
 ```
 
-These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) . 
-
+These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) .
 
 ## Deploy Azure resources
 
 Export the following environment variables:
 
-``` bash
+```bash
 export LOCATION=<location>
 export RESOURCEGROUP=<resource-group>
 export APPNAME=<functionapp-name> # Cannot be more than 6 characters
@@ -56,29 +55,29 @@ az deployment group create \
    cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
 ```
 
-Create Cosmos DB database and collection.
+Create Cosmos DB database and collection. This resource is one of the most expensive, in order to take care the cost in the current reference implementation the container has throughput set to autoscale with a maximum 5000 throughput unites, this would be enough for the current example. In production, the configuration need to be appropriate to process the telemetry. 
 
 ```bash
 # Get the Cosmos DB account name from the deployment output
-export COSMOSDB_DATABASE_ACCOUNT=$(az group deployment show \
+export COSMOSDB_DATABASE_ACCOUNT=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.cosmosDatabaseAccount.value \
-                                    -o tsv) 
+                                    -o tsv)
 
 # Create the Cosmos DB database
-az cosmosdb database create \
+az cosmosdb sql database create \
    -g $RESOURCEGROUP \
-   -n $COSMOSDB_DATABASE_ACCOUNT \
-   -d $COSMOSDB_DATABASE_NAME
+   -a $COSMOSDB_DATABASE_ACCOUNT \
+   -n $COSMOSDB_DATABASE_NAME
 
 # Create the collection
-az cosmosdb collection create \
+az cosmosdb sql container create \
    -g $RESOURCEGROUP \
-   -n $COSMOSDB_DATABASE_ACCOUNT \
+   -a $COSMOSDB_DATABASE_ACCOUNT \
    -d $COSMOSDB_DATABASE_NAME \
-   -c $COSMOSDB_DATABASE_COL \
-   --partition-key-path /id --throughput 10000
+   -n $COSMOSDB_DATABASE_COL \
+   --partition-key-path /id --max-throughput 5000
 ```
 
 ## Publish Azure Function Apps
@@ -87,11 +86,11 @@ Deploy the drone status function
 
 ```bash
 ## Get the functiona app name from the deployment output
-export DRONE_STATUS_FUNCTION_APP_NAME=$(az group deployment show \
+export DRONE_STATUS_FUNCTION_APP_NAME=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.droneStatusFunctionAppName.value \
-                                    -o tsv) 
+                                    -o tsv)
 
 # Publish the function to a local directory
 dotnet publish DroneStatus/dotnet/DroneStatusFunctionApp/ \
@@ -113,11 +112,11 @@ Deploy the drone telemetry function
 
 ```bash
 ## Get the functiona app name from the deployment output
-export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az group deployment show \
+export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az deployment group show \
                                     -g ${RESOURCEGROUP} \
                                     -n azuredeploy-backend-functionapps \
                                     --query properties.outputs.droneTelemetryFunctionAppName.value \
-                                    -o tsv) 
+                                    -o tsv)
 
 # Publish the function to a local directory
 dotnet publish DroneTelemetry/DroneTelemetryFunctionApp/ \
@@ -137,12 +136,12 @@ az functionapp deployment source config-zip \
 
 ## Deploy the API Management gateway
 
-Get the function key for the DroneStatus function. 
+Get the function key for the DroneStatus function.
 
 1. Open the Azure portal
-2. Navigate to the resource group and open the blade for the DroneStatus function
-3. Click **Manage**.
-4. Under **Function Keys**, click **Copy**
+2. Navigate to the resource group and open the DroneStatus function app
+3. Click **Fuctions** and then select **GetStatusFunction**.
+4. Under **Function Keys**, copy the default value
 
 Deploy API Management
 
@@ -151,15 +150,14 @@ export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
 
 export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
 
-az group deployment create \
+# This takes more than 1hs to execute
+az deployment group create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-apim.json \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}
 ```
-
-> Allow 20-30 minutes for this step to complete.
 
 ## Build and run the device simulator
 
@@ -183,13 +181,15 @@ dotnet build $SIMULATOR_PROJECT_PATH
 dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
-The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select RawTelemetryFunction, expand the **Monitor** tab, and click on any of the logs.
+The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select **RawTelemetryFunction**, expand the **Monitor** tab, and click on any of the logs.
+Also, you can see the database, which will be populated by the drone status.
 
 ## Enable authentication in the function app
 
 This step creates a new app registration for the API in Azure AD, and enables OIDC authentication in the function app.
 
 ### Register the application in Azure AD
+
 If you're planning on using the tenant associated to your Azure subscription you can retrieve it.
 
 ```bash
@@ -217,6 +217,7 @@ export API_APP_ID=$(az ad app create --display-name $API_APP_NAME --oauth2-allow
 --app-roles '  [ {  "allowedMemberTypes": [ "User" ], "description":"Access to device status", "displayName":"Get Device Status", "isEnabled":true, "value":"GetStatus" }]' \
 --required-resource-accesses '  [ {  "resourceAppId": "00000003-0000-0000-c000-000000000000", "resourceAccess": [ { "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d", "type": "Scope" } ] }]' \
 --query appId --output tsv)
+export IDENTIFIER_URI=$(az ad app show --id $API_APP_ID --query identifierUris[0] -o tsv)
 
 # Create a service principal for the registered application
 az ad sp create --id $API_APP_ID
@@ -227,6 +228,7 @@ Log back into your subscription if you've used a different tenant.
 
 ```bash
 az login
+az account set --subscription <your-subscription-id>
 ```
 
 ### Configure Azure AD authentication in the Function App
@@ -235,10 +237,12 @@ az login
 az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled true \
 --action LoginWithAzureActiveDirectory \
 --aad-token-issuer-url $ISSUER_URL \
---aad-client-id $API_APP_ID
+--aad-client-id $API_APP_ID \
+--aad-allowed-token-audiences $IDENTIFIER_URI
 ```
 
 ### Assign application to user or role
+
 This is required for the admin user who will need to be authenticated to use the Azure Function.
 
 1. In the Azure Portal, navigate to your Azure AD tenant.
@@ -248,7 +252,7 @@ This is required for the admin user who will need to be authenticated to use the
 5. Click **Users and groups**.
 6. Select a user, and click **Select**.
 
-    > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
+   > Note: If you define more than one App role in the manifest, you can select the user's role. In this case, there is only one role, so the option is grayed out.
 
 7. Click **Assign**.
 
@@ -259,42 +263,19 @@ Follow the instructions [here](./ClientApp/readme.md) to deploy the SPA. Make su
 Next, update the policies in the API Management gateway. This update adds the CDN endpoint URL as an allowed origin for the CORS configuration, and enables authentication for tokens issued for the registered application for the API.
 
 ```bash
-export API_MANAGEMENT_SERVICE=$(az group deployment show \
+export API_MANAGEMENT_SERVICE=$(az deployment group show \
                                     --resource-group ${RESOURCEGROUP} \
                                     --name azuredeploy-apim \
                                     --query properties.outputs.apimGatewayServiceName.value \
-                                    --output tsv) 
+                                    --output tsv)
 export API_POLICY_ID="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv1/policies/policy"
 az resource create --id $API_POLICY_ID \
     --properties "{
-        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$API_APP_ID</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
+        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"
 ```
-
-## (Optional) Use an Azure Front Door as alternative to CDN
-
-Alternatively, it is possible to have static web content stored by the same storage account used by the CDN, but using an Azure Front Door instead.
-This can be done by configuring a backend pool with a custom host name and having the backend host header set to the URL of the static storage account website.
-
-Prerequisite
-
-1) The storage account has to be a general purpose v2 storage account
-2) For storage account name and resource group name, use the same variables used for installing the serverless client app
-
-```bash
-export AFD_NAME=<Azure Front Door Name>
-
-
-# Retrieve the static website endpoint
-export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --query primaryEndpoints.web --output tsv)
-export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
-
-# Install the Azure Front Door extension
-az extension add --name front-doorHttp
-
-# Create and Configure the Azure Front Door
-az network front-door create --backend-address $WEB_SITE_HOST --name $AFD_NAME --resource-group $RESOURCEGROUP --accepted-protocols Http Https
-```
+## Open app 
+Execute the url `$CLIENT_URL` in your browser
 
 ## (Optional) Deploy v2 of GetStatus API
 
