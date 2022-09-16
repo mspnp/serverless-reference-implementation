@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [.NET Core 3.1 and .NET 5.0](https://www.microsoft.com/net/download)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.27.1 or higher
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.27.1 or higher
 - [SED](https://www.gnu.org/software/sed/)
 
 Clone or download this repo locally.
@@ -13,7 +13,7 @@ git clone https://github.com/mspnp/serverless-reference-implementation.git
 cd serverless-reference-implementation/src
 ```
 
-These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) .
+These instructions target Linux-based systems. For Windows machine, [install Windows Subsystem for Linux](https://learn.microsoft.com/windows/wsl/install-win10) and choose a Linux distribution. Make sure to install the .Net Core libraries specific to your environment. For Linux or Windows Subsystem for Linux, choose [this installation for your distribution](https://dotnet.microsoft.com/download/linux-package-manager/rhel/sdk-2.2.108) .
 
 ## Deploy Azure resources
 
