@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [Azure CLI 2.27.1 or later](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- [Azure CLI 2.27.1 or later](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [Azure DevOps account](https://azure.microsoft.com/services/devops)
 
 ## Register an application with your Azure Active Directory tenant
@@ -54,7 +54,7 @@ export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --res
 export WEB_SITE_HOST=$(echo $WEB_SITE_URL | sed -rn 's#.+//([^/]+)/?#\1#p')
 ```
 
-See [Static website hosting in Azure Storage](https://docs.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details.
+See [Static website hosting in Azure Storage](https://learn.microsoft.com/azure/storage/blobs/storage-blob-static-website) for details.
 
 ## Set up the Azure CDN endpoint to point to the static web site
 
@@ -120,7 +120,7 @@ export ARM_SP_CLIENT_SECRET=$(echo $SP_DETAILS | jq ".password" -r)
 ## Create multi-stage YAML pipeline
 
 You must create a service connection with name defined by `echo $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME`
-For [create a service connection follow the document](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#create-a-service-connection). Choose a github connection base on personal token. Here documentation about how to get the [personal token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+For [create a service connection follow the document](https://learn.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#create-a-service-connection). Choose a github connection base on personal token. Here documentation about how to get the [personal token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 ```
 # export Azure DevOps resources
@@ -216,4 +216,4 @@ echo "Open a browser on 'https://login.microsoftonline.com/${TENANT_ID}/oauth2/v
 &scope=${API_APP_ID}%2Fuser_impersonation&state=12345'"
 ```
 
-See [Types of permissions and consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-permissions-and-consent) for details.
+See [Types of permissions and consent](https://learn.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent) for details.
