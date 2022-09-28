@@ -1,0 +1,119 @@
+name: Deploy Drone Client App
+on:
+  workflow_dispatch:
+   inputs:
+      azureTenantId:
+        description: "Tenant Id where app identities are located"  
+        required: true
+      clientAppId:
+        description: "Client app Id"  
+        required: true
+      apiAppId:
+        description: "Api app Id"  
+        required: true
+      accessTokenScope:
+        description: "Access token scope required to access the API"
+        required: true
+      apiURL:
+        description: "Api Management URL"  
+        required: true
+      azureStorageAccountName:
+        description: "Azure Storage Account Name"  
+        required: true 
+      azureCdnName:
+        description: "Azure CDN resource name"
+        required: true
+      resourceGroupName:
+        description: "Resource group name"
+        required: true
+        default: "rg-severless"       
+      githubBranch:
+        description: "Repo branch which want to deploy"
+        required: true
+        default: "main"
+jobs:
+  deployClientApp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check inputs values
+        run: |
+          echo "Tenant Id where app identities are located: ${{ github.event.inputs.azureTenantId }}"
+          echo "Client app Id: ${{ github.event.inputs.clientAppId }}"
+          echo "Api app Id: ${{ github.event.inputs.apiAppId }}"
+          echo "Access Token Scope: ${{ github.event.inputs.accessTokenScope }}"
+          echo "Api URL: ${{ github.event.inputs.apiURL }}" 
+          echo "Azure Storage Account Name: ${{ github.event.inputs.azureStorageAccountName }}" 
+          echo "Azure CDN resource name: ${{ github.event.inputs.azureCdnName }}" 
+          echo "Resource group name: ${{ github.event.inputs.resourceGroupName }}" 
+          echo "Scripts branch: ${{ github.event.inputs.githubBranch }}"
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+         ref: ${{ github.event.inputs.githubBranch }}
+         fetch-depth: 0
+      - name: Install ubuntu package dependencies
+        run: |
+           sudo apt-get install brotli --install-suggests --no-install-recommends -q --assume-yes
+      - name: Configure azure tenant, client and api details
+        run: |
+          cd src/ClientApp
+          cat > .env.production <<EOF
+          AZURE_TENANT_ID= ${{ github.event.inputs.azureTenantId }}
+          AZURE_CLIENT_ID=${{ github.event.inputs.clientAppId }}
+          AZURE_API_CLIENT_ID=${{ github.event.inputs.apiAppId }}
+          AZURE_API_URL=${{ github.event.inputs.apiURL }}
+          ACCESS_TOKEN_SCOPE=${{ github.event.inputs.accessTokenScope }}
+          EOF
+      - name: Gatsby build
+        run: |
+          cd src/ClientApp
+          npm install
+          npx gatsby build
+      - name: Enable compression at origin level
+        run: |
+          cd src/ClientApp/public
+          for f in $(find . -type f \( -iname '*.html' -o -iname '*.map' -o -iname '*.js' -o -iname '*.json' \)); do brotli $f -Z -j -f -v && mv ${f}.br $f; done
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: '5.5.0'
+      - name: Bump version
+        id:   gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.7
+      - name: Display GitVersion outputs
+        run: |
+          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "FullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}"
+          echo "${{ steps.gitversion.outputs.majorMinorPatch }}" > src/ClientApp/public/version.txt
+          echo "${{ steps.gitversion.outputs.fullSemVer }}" > src/ClientApp/public/semver.txt
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ steps.gitversion.outputs.fullSemVer }}
+          release_name: Release ${{ steps.gitversion.outputs.fullSemVer }}
+          body: |
+            'Fabrikam Drone Status App ${{ steps.gitversion.outputs.fullSemVer }}'
+          draft: true
+          prerelease: false
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Upload to Azure Storage static website hosting and purge Azure CDN endpoint
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            Folder=$(echo ${{ steps.gitversion.outputs.fullSemVer }} | sed  's/+//g')
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.html" --content-type "text/html" 
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.js" --content-type "application/javascript"
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.js.map" --content-type "application/octet-stream"
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.json" --content-type "application/json"
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --pattern "*.txt" --content-type "text/plain"
+            # target new version
+            az cdn endpoint update --resource-group ${{ github.event.inputs.resourceGroupName }} --profile-name ${{ github.event.inputs.azureCdnName }} --name ${{ github.event.inputs.azureCdnName }} --origin-path /$Folder
+            AZURE_CDN_ENDPOINT_HOSTNAME=$(az cdn endpoint show --resource-group ${{ github.event.inputs.resourceGroupName }} --name ${{ github.event.inputs.azureCdnName }} --profile-name ${{ github.event.inputs.azureCdnName }} --query hostName -o tsv)
+            echo "Azure CDN endpooint host ${AZURE_CDN_ENDPOINT_HOSTNAME}"
+ 

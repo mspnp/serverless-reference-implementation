@@ -18,17 +18,18 @@ az login --tenant $TENANT_ID --allow-no-subscriptions
 export CLIENT_APP_NAME=<app name>
 
 # Create the application registration, requesting permission to access the Graph API and to impersonate a user when calling the drone status API
-export API_IMPERSONATION_PERMISSION=$(az ad app show --id $API_APP_ID --query "oauth2Permissions[?value == 'user_impersonation'].id" --output tsv)
+export API_IMPERSONATION_PERMISSION=$(az ad app show --id $API_APP_ID --query "api.oauth2PermissionScopes[0].id" --output tsv)
+
 export SP_RESPONSE=$(az ad app create --display-name $CLIENT_APP_NAME \
---native-app false --identifier-uris "http://$CLIENT_APP_NAME" \
---required-resource-accesses "  [ { \"resourceAppId\": \"$API_APP_ID\", \"resourceAccess\": [ { \"id\": \"$API_IMPERSONATION_PERMISSION\", \"type\": \"Scope\" } ] }, { \"resourceAppId\": \"00000003-0000-0000-c000-000000000000\", \"resourceAccess\": [ { \"id\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\", \"type\": \"Scope\" } ] } ]" )
+--is-fallback-public-client false --identifier-uris "http://$TENANT_DOMAIN/$CLIENT_APP_NAME" \
+--required-resource-accesses "  [ { \"resourceAppId\": \"$API_APP_ID\", \"resourceAccess\": [ { \"id\": \"$API_IMPERSONATION_PERMISSION\", \"type\": \"Scope\" } ] }, { \"resourceAppId\": \"00000003-0000-0000-c000-000000000000\", \"resourceAccess\": [ { \"id\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\", \"type\": \"Scope\" } ] } ] ")
 
 export CLIENT_APP_ID=$(echo $SP_RESPONSE | jq ".appId" -r)
-export CLIENT_APP_OBJECT_ID=$(echo $SP_RESPONSE | jq ".objectId" -r)
+export CLIENT_APP_OBJECT_ID=$(echo $SP_RESPONSE | jq ".id" -r)
 
 # Create a service principal for the registered application
 az ad sp create --id $CLIENT_APP_ID
-az ad sp update --id $CLIENT_APP_ID --add tags "WindowsAzureActiveDirectoryIntegratedApp"
+az ad sp update --id $CLIENT_APP_ID --set tags='["WindowsAzureActiveDirectoryIntegratedApp"]'
 ```
 
 > Log back into your subscription if you've used a different tenant.
@@ -93,87 +94,49 @@ git push newremote master
 
 > Note: alternatively you could fork this repo and then clone.
 
-## Setup Azure DevOps
+## Setup GitHub Action Workflow
 
+Install [GitHub Cli](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#official-sources).
+
+Then you will need to login GitHib Cli 
 ```
-# add extensions
-az extension add --name azure-devops
-
-# export
-export AZURE_DEVOPS_ORG_NAME=<devops-org-name>
-export AZURE_DEVOPS_ORG=https://dev.azure.com/$AZURE_DEVOPS_ORG_NAME
-export AZURE_DEVOPS_PROJECT_NAME=<new-or-existent-project-name>
-export AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME=${GITHUB_USER}-srvconn
-
-# create project or skip this step if you are using an existent Azure DevOps project
-az devops project create \
-   --name $AZURE_DEVOPS_PROJECT_NAME \
-   --organization $AZURE_DEVOPS_ORG
-
-# create service principal for Azure Resource Management from Azure Pipelines
-export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor") && \
-export ARM_TENANT_ID=$(echo $SP_DETAILS | jq ".tenant" -r) && \
-export ARM_SP_CLIENT_ID=$(echo $SP_DETAILS | jq ".appId" -r) && \
-export ARM_SP_CLIENT_SECRET=$(echo $SP_DETAILS | jq ".password" -r)
+gh auth login
 ```
 
-## Create multi-stage YAML pipeline
-
-You must create a service connection with name defined by `echo $AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME`
-For [create a service connection follow the document](https://learn.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml#create-a-service-connection). Choose a github connection base on personal token. Here documentation about how to get the [personal token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
-
+We need a Service Principal able to create resources on your subcription. You use one already created or create a new one with the folowing command
 ```
-# export Azure DevOps resources
-export AZURE_DEVOPS_PROJECT_ID=$(az devops project show --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --query id -o tsv)
-
-# add build definition (some info could be requested during this process)
-# The command will give you the service connection options. Please, choose the one already created.
-az pipelines create \
-   --organization $AZURE_DEVOPS_ORG \
-   --project $AZURE_DEVOPS_PROJECT_NAME \
-   --name clientapp-cicd \
-   --yml-path src/ClientApp/azure-pipelines.yml \
-   --repository-type github \
-   --repository $NEW_REMOTE_URL \
-   --branch master \
-   --skip-first-run=true
-```
+export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor" --sdk-auth)
+``` 
+The complete Json result should be added as a Github Secret on your repo
+``` 
+export GH_USER=$(gh repo view --json owner -q .owner.login)
+gh secret set AZURE_CREDENTIALS --body "$SP_DETAILS" --repo $GH_USER/serverless-reference-implementation
+``` 
 
 ## Create variables and kickoff first CI/CD run
-
-```bash
+```
 export APIM_GATEWAY_URL=$(az deployment group show \
                                     --resource-group ${RESOURCEGROUP} \
                                     --name azuredeploy-apim \
                                     --query properties.outputs.apimGatewayURL.value \
                                     --output tsv)
+export ACESS_TOKEN_SCOPE=${IDENTIFIER_URI}/Status.Read
 
-# create pipeline variables
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureTenantId --value=$TENANT_ID && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureClientId --value=$CLIENT_APP_ID && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiClientId --value=$API_APP_ID && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureApiUrl --value=$APIM_GATEWAY_URL && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmTenantId --value=$ARM_TENANT_ID && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientId --value=$ARM_SP_CLIENT_ID && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureArmClientSecret --value=$ARM_SP_CLIENT_SECRET --secret=true && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=gitHubServiceConnectionName --value=$AZURE_DEVOPS_GITHUB_SERVICE_CONNECTION_NAME && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureStorageAccountName --value=$STORAGE_ACCOUNT_NAME && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureCdnName --value=$CDN_NAME && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=azureResourceGroup --value=$RESOURCEGROUP && \
-az pipelines variable create --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --pipeline-name=clientapp-cicd --name=accessTokenScope --value=${IDENTIFIER_URI}/user_impersonation
-# kick off first run
-az pipelines build queue --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --definition-name=clientapp-cicd
+gh workflow run deploy-clientapp.yaml --ref main -f azureTenantId=$TENANT_ID -f clientAppId=$CLIENT_APP_ID -f apiAppId=$API_APP_ID -f accessTokenScope=$ACESS_TOKEN_SCOPE -f apiURL=$APIM_GATEWAY_URL -f azureStorageAccountName=$STORAGE_ACCOUNT_NAME -f azureCdnName=$CDN_NAME -f resourceGroupName=$RESOURCEGROUP -f githubBranch=main
 ```
-
-> Note: from your Azure DevOps organization, please consider enabling the `Multi-stage pipelines preview feature` for a better experience
 
 ## Monitor the current pipeline execution status
 
 ```bash
 # monitor until stages are completed
-export COMMIT_SHA1=$(git rev-parse HEAD) && \
-until export PIPELINE_STATUS=$(az pipelines build list --organization $AZURE_DEVOPS_ORG --project $AZURE_DEVOPS_PROJECT_NAME --query "[?sourceVersion=='${COMMIT_SHA1}']".status -o tsv 2> /dev/null) && [[ $PIPELINE_STATUS == "completed" ]]; do echo "Monitoring multi-stage pipeline: ${PIPELINE_STATUS}" && sleep 20; done
+gh run list -L 1
+# Get Id and execute 
+gh run view <yourId>
+# This command will include at the end a command with an id to see more details, it will look like 
+# To see the full job log, try: gh run view --log --job=8644697022
+# and you could get good information running that: gh run view --log --job=8644697022
 ```
+Wait till the GitHub Action is complete
 
 ## Configure Dynamic Site Acceleration
 
@@ -195,7 +158,7 @@ az login --tenant $TENANT_ID --allow-no-subscriptions
 ```
 
 ```bash
-az rest --method PATCH --uri 'https://graph.microsoft.com/v1.0/applications/'$CLIENT_APP_OBJECT_ID --headers 'Content-Type=application/json' --body '{"spa":{"redirectUris":["'$CLIENT_URL'"]}}'
+az rest --method PATCH --uri 'https://graph.microsoft.com/v1.0/applications/'$CLIENT_APP_OBJECT_ID --headers 'Content-Type=application/json' --body '{"spa":{"redirectUris":["'$CLIENT_URL'"]},web:{implicitGrantSettings:{enableAccessTokenIssuance:true}}}'
 ```
 
 > Log back into your subscription if you've used a different tenant.
@@ -205,15 +168,8 @@ az login
 az account set --subscription <your-subscription-id>
 ```
 
-## Launch the application granting consent
+## About consent
 
 The first time you use the client application you need to consent to the delegated permissions specified for the application, unless an administrator granted consent for all users in the directory.
-
-For single-page applications, user consent can be granted by navigating to an Azure AD URL as specified below; the web site will request a user login and consent for the application. To actually use the application, you need to complete the rest of the deployment instructions to complete the configuration.
-
-```bash
-echo "Open a browser on 'https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize?client_id=${CLIENT_APP_ID}&response_type=code&redirect_uri=https%3A%2F%2F${CDN_ENDPOINT_HOST}&response_mode=query
-&scope=${API_APP_ID}%2Fuser_impersonation&state=12345'"
-```
 
 See [Types of permissions and consent](https://learn.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent) for details.

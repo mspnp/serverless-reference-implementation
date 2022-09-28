@@ -34,6 +34,7 @@ Login to Azure CLI and select your subscription.
 
 ```bash
 az login
+az account list --output table
 az account set --subscription <your-subscription-id>
 ```
 
@@ -210,18 +211,25 @@ export API_APP_NAME=<app name>
 # Collect information about your tenant
 export FEDERATION_METADATA_URL="https://login.microsoftonline.com/$TENANT_ID/FederationMetadata/2007-06/FederationMetadata.xml"
 export ISSUER_URL=$(curl $FEDERATION_METADATA_URL --silent | sed -n 's/.*entityID="\([^"]*\).*/\1/p')
+export TENANT_DOMAIN=$(az ad signed-in-user show --query 'userPrincipalName' | cut -d '@' -f 2 | sed 's/\"//')
 
 # Create the application registration, defining a new application role and requesting access to read a user using the Graph API
-export API_APP_ID=$(az ad app create --display-name $API_APP_NAME --oauth2-allow-implicit-flow true \
---native-app false --reply-urls http://localhost --identifier-uris "http://$API_APP_NAME" \
+export API_APP_ID=$(az ad app create --display-name $API_APP_NAME --enable-access-token-issuance true \
+--is-fallback-public-client false --identifier-uris "http://$TENANT_DOMAIN/$API_APP_NAME" \
 --app-roles '  [ {  "allowedMemberTypes": [ "User" ], "description":"Access to device status", "displayName":"Get Device Status", "isEnabled":true, "value":"GetStatus" }]' \
 --required-resource-accesses '  [ {  "resourceAppId": "00000003-0000-0000-c000-000000000000", "resourceAccess": [ { "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d", "type": "Scope" } ] }]' \
 --query appId --output tsv)
+export API_APP_OBJECTID=$(az ad app show --id $API_APP_ID --query id --output tsv)
 export IDENTIFIER_URI=$(az ad app show --id $API_APP_ID --query identifierUris[0] -o tsv)
+
+# Generate API Scope
+uuid=$(uuidgen)
+PATCH_BODY_SCOPE="{api:{oauth2PermissionScopes:[{'adminConsentDescription': 'Status.Read','adminConsentDisplayName': 'Status.Read', 'id': '${uuid}','isEnabled': true,'type': 'User','userConsentDescription': null,'userConsentDisplayName': null,'value': 'Status.Read'}]}}"
+az rest --method PATCH --uri https://graph.microsoft.com/v1.0/applications/$API_APP_OBJECTID --headers 'Content-Type=application/json' --body "$PATCH_BODY_SCOPE"
 
 # Create a service principal for the registered application
 az ad sp create --id $API_APP_ID
-az ad sp update --id $API_APP_ID --add tags "WindowsAzureActiveDirectoryIntegratedApp"
+az ad sp update --id $API_APP_ID --set tags='["WindowsAzureActiveDirectoryIntegratedApp"]'
 ```
 
 Log back into your subscription if you've used a different tenant.
@@ -271,7 +279,7 @@ export API_MANAGEMENT_SERVICE=$(az deployment group show \
 export API_POLICY_ID="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv1/policies/policy"
 az resource create --id $API_POLICY_ID \
     --properties "{
-        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
+        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/v2.0/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$API_APP_ID</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"
 ```
 ## Open app 
