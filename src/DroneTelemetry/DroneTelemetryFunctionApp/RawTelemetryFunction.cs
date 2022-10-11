@@ -1,5 +1,5 @@
 using Microsoft.ApplicationInsights;
-using Microsoft.Azure.EventHubs;
+using Azure.Messaging.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using System;
@@ -36,7 +36,7 @@ namespace DroneTelemetryFunctionApp
 
                 try
                 {
-                    deviceState = telemetryProcessor.Deserialize(message.Body.Array, logger);
+                    deviceState = telemetryProcessor.Deserialize(message.Body.ToArray(), logger);
 
                     try
                     {
@@ -50,7 +50,7 @@ namespace DroneTelemetryFunctionApp
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error deserializing message", message.SystemProperties.PartitionKey, message.SystemProperties.SequenceNumber);
+                    logger.LogError(ex, "Error deserializing message", message.PartitionKey, message.SequenceNumber);
                     await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message });
                 }
             }
