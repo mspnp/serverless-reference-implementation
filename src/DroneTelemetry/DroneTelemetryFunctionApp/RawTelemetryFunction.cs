@@ -10,14 +10,12 @@ namespace DroneTelemetryFunctionApp
     public class RawTelemetryFunction
     {
         private readonly ITelemetryProcessor telemetryProcessor;
-        private readonly IStateChangeProcessor stateChangeProcessor;
-
+        
         private readonly TelemetryClient telemetryClient;
 
-        public RawTelemetryFunction(ITelemetryProcessor telemetryProcessor, IStateChangeProcessor stateChangeProcessor, TelemetryClient telemetryClient)
+        public RawTelemetryFunction(ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient)
         {
             this.telemetryProcessor = telemetryProcessor;
-            this.stateChangeProcessor = stateChangeProcessor;
             this.telemetryClient = telemetryClient;
         }
 
@@ -26,6 +24,11 @@ namespace DroneTelemetryFunctionApp
         public async Task RunAsync(
             [EventHubTrigger("%EventHubName%", Connection = "EventHubConnection", ConsumerGroup = "%EventHubConsumerGroup%")] EventData[] messages,
             [Queue("deadletterqueue")] IAsyncCollector<DeadLetterMessage> deadLetterMessages,
+            [CosmosDB(
+                databaseName: "%COSMOSDB_DATABASE_NAME%",
+                collectionName: "%COSMOSDB_DATABASE_COL%",
+                ConnectionStringSetting = "COSMOSDB_CONNECTION_STRING")]
+                IAsyncCollector<DeviceState> devices,
             ILogger logger)
         {
             telemetryClient.GetMetric("EventHubMessageBatchSize").TrackValue(messages.Length);
@@ -40,7 +43,7 @@ namespace DroneTelemetryFunctionApp
 
                     try
                     {
-                        await stateChangeProcessor.UpdateState(deviceState, logger);
+                        await devices.AddAsync(deviceState);
                     }
                     catch (Exception ex)
                     {
