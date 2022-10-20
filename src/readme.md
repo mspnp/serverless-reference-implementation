@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [.NET Core 3.1 and .NET 5.0](https://www.microsoft.com/net/download)
-- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.27.1 or higher
+- [.NET 6.0](https://www.microsoft.com/net/download)
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.39.0 or higher
 - [SED](https://www.gnu.org/software/sed/)
 
 Clone or download this repo locally.
