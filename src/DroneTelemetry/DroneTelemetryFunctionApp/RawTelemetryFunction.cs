@@ -1,5 +1,5 @@
 using Microsoft.ApplicationInsights;
-using Microsoft.Azure.EventHubs;
+using Azure.Messaging.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using System;
@@ -10,14 +10,12 @@ namespace DroneTelemetryFunctionApp
     public class RawTelemetryFunction
     {
         private readonly ITelemetryProcessor telemetryProcessor;
-        private readonly IStateChangeProcessor stateChangeProcessor;
-
+        
         private readonly TelemetryClient telemetryClient;
 
-        public RawTelemetryFunction(ITelemetryProcessor telemetryProcessor, IStateChangeProcessor stateChangeProcessor, TelemetryClient telemetryClient)
+        public RawTelemetryFunction(ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient)
         {
             this.telemetryProcessor = telemetryProcessor;
-            this.stateChangeProcessor = stateChangeProcessor;
             this.telemetryClient = telemetryClient;
         }
 
@@ -26,6 +24,11 @@ namespace DroneTelemetryFunctionApp
         public async Task RunAsync(
             [EventHubTrigger("%EventHubName%", Connection = "EventHubConnection", ConsumerGroup = "%EventHubConsumerGroup%")] EventData[] messages,
             [Queue("deadletterqueue")] IAsyncCollector<DeadLetterMessage> deadLetterMessages,
+            [CosmosDB(
+                databaseName: "%COSMOSDB_DATABASE_NAME%",
+                collectionName: "%COSMOSDB_DATABASE_COL%",
+                ConnectionStringSetting = "COSMOSDB_CONNECTION_STRING")]
+                IAsyncCollector<DeviceState> devices,
             ILogger logger)
         {
             telemetryClient.GetMetric("EventHubMessageBatchSize").TrackValue(messages.Length);
@@ -36,11 +39,11 @@ namespace DroneTelemetryFunctionApp
 
                 try
                 {
-                    deviceState = telemetryProcessor.Deserialize(message.Body.Array, logger);
+                    deviceState = telemetryProcessor.Deserialize(message.Body.ToArray(), logger);
 
                     try
                     {
-                        await stateChangeProcessor.UpdateState(deviceState, logger);
+                        await devices.AddAsync(deviceState);
                     }
                     catch (Exception ex)
                     {
@@ -50,7 +53,7 @@ namespace DroneTelemetryFunctionApp
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error deserializing message", message.SystemProperties.PartitionKey, message.SystemProperties.SequenceNumber);
+                    logger.LogError(ex, "Error deserializing message", message.PartitionKey, message.SequenceNumber);
                     await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message });
                 }
             }
