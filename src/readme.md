@@ -173,7 +173,7 @@ export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule ke
      -g $RESOURCEGROUP \
      --eventhub-name $APPNAME-eh  \
      --namespace-name $EH_NAMESPACE \
-     -n send \
+     --name send \
      --query primaryConnectionString --output tsv)
 
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
