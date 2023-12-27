@@ -5,7 +5,7 @@
 - [Azure CLI 2.27.1 or later](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [Azure DevOps account](https://azure.microsoft.com/services/devops)
 
-## Register an application with your Azure Active Directory tenant
+## Register an application with your Microsoft Entra ID tenant
 
 > If you're using a tenant different to the tenant associated to the subscription, log in to that tenant. You will need to log in the subscription after creating the application to continue the instructions.
 
@@ -172,4 +172,4 @@ az account set --subscription <your-subscription-id>
 
 The first time you use the client application you need to consent to the delegated permissions specified for the application, unless an administrator granted consent for all users in the directory.
 
-See [Types of permissions and consent](https://learn.microsoft.com/azure/active-directory/develop/v2-permissions-and-consent) for details.
+See [Types of permissions and consent](https://learn.microsoft.com/entra/identity-platform/permissions-consent-overview) for details.

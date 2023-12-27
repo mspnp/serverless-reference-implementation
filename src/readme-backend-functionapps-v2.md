@@ -130,7 +130,7 @@ az resource create --id $API_POLICY_ID_V2 \
     }"
 ```
 
-# step 9
+## step 9
 
 The client app need to be changed to use the new api version
 We need to change config.js to use `v2`
@@ -145,10 +145,10 @@ export const getApiConfig = () =>
 }
 ```
 
-# step 10
+## step 10
 
 The ClientApp deploy need to be trigger again
 After checking the new version is deployed `$CLIENT_URL/semver.txt`, the new nodejs Azure Function is executed. 
 You can check the url called from the Network developer tools (.../api/**v2**/dronestatus/drone-3)
 
-> Note: for this example, both versions of the function will represent the same resource so they will share the AAD application id. Tokens retrieved to access the API will work for both versions.
+> Note: for this example, both versions of the function will represent the same resource so they will share the Microsoft Entra ID application id. Tokens retrieved to access the API will work for both versions.

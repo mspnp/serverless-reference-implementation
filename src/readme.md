@@ -187,9 +187,9 @@ Also, you can see the database, which will be populated by the drone status.
 
 ## Enable authentication in the function app
 
-This step creates a new app registration for the API in Azure AD, and enables OIDC authentication in the function app.
+This step creates a new app registration for the API in Microsoft Entra ID, and enables OIDC authentication in the function app.
 
-### Register the application in Azure AD
+### Register the application in Microsoft Entra ID
 
 If you're planning on using the tenant associated to your Azure subscription you can retrieve it.
 
@@ -239,7 +239,7 @@ az login
 az account set --subscription <your-subscription-id>
 ```
 
-### Configure Azure AD authentication in the Function App
+### Configure Microsoft Entra ID authentication in the Function App
 
 ```bash
 az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled true \
@@ -253,7 +253,7 @@ az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCT
 
 This is required for the admin user who will need to be authenticated to use the Azure Function.
 
-1. In the Azure Portal, navigate to your Azure AD tenant.
+1. In the Azure Portal, navigate to your Microsoft Entra ID tenant.
 2. Click on **Enterprise Applications** and then search and select the Drone Status application name.
 3. Click **Users and groups**.
 4. Click **Add user**.
