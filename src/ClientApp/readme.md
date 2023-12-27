@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [Azure CLI 2.27.1 or later](https://learn.microsoft.com/cli/azure/install-azure-cli)
+- [Azure CLI 2.51 or later](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - [Azure DevOps account](https://azure.microsoft.com/services/devops)
 
 ## Register an application with your Microsoft Entra ID tenant
@@ -63,7 +63,7 @@ See [Static website hosting in Azure Storage](https://learn.microsoft.com/azure/
 export CDN_NAME=<cdn name>
 
 # Create the CDN profile and endpoint
-az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME
+az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME --sku Standard_Verizon
 export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resource-group $RESOURCEGROUP --profile-name $CDN_NAME --name $CDN_NAME \
 --no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
 --query hostName --output tsv)
@@ -145,7 +145,6 @@ az cdn endpoint update \
    -g $RESOURCEGROUP \
    --profile-name $CDN_NAME \
    -n $CDN_NAME \
-   --set optimizationType="DynamicSiteAcceleration" \
    --set probePath="/semver.txt"
 ```
 
