@@ -39,6 +39,16 @@ az login
 az account set --subscription <your-subscription-id>
 ```
 
+## Allow client app contact Done Status Function App
+
+1. **Navigate to the Done Status Function App**.
+2. Go to the **Authentication** section.
+3. Edit the **Microsoft Identity Provider** settings.
+4. Under **Client application requirements**, select **"Allow requests from specific client applications"**.
+5. Add the **$CLIENT_APP_ID** to the list of allowed client applications.
+6. Save your changes.
+
+
 ## Create Azure Storage static website hosting
 
 ```bash
@@ -63,7 +73,7 @@ See [Static website hosting in Azure Storage](https://learn.microsoft.com/azure/
 export CDN_NAME=<cdn name>
 
 # Create the CDN profile and endpoint
-az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME --sku Standard_Verizon
+az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME --sku Standard_Microsoft
 export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resource-group $RESOURCEGROUP --profile-name $CDN_NAME --name $CDN_NAME \
 --no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
 --query hostName --output tsv)
@@ -74,7 +84,8 @@ az cdn endpoint update \
    --profile-name $CDN_NAME \
    -n $CDN_NAME \
    --set deliveryPolicy.description="" \
-   --set deliveryPolicy.rules='[{"actions": [{"name": "CacheExpiration","parameters": {"cacheType":"All","cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"operator":"Any","matchValues": ["js","css","map"]}}],"order": 1}]'
+   --set deliveryPolicy.rules='[{"name": "CacheExpiration", "actions": [{"name": "CacheExpiration","parameters": {"cacheType":"All","cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"operator":"EndsWith","matchValues": ["js","css","map"],"transforms": ["Lowercase"] }}],"order": 1}]'
+
 
 export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 ```
@@ -105,7 +116,9 @@ gh auth login
 
 We need a Service Principal able to create resources on your subcription. You use one already created or create a new one with the folowing command
 ```
-export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor" --sdk-auth)
+export SCOPE_ID=$(az group show --name far-rg-severless --query id --output tsv)
+
+export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor" --sdk-auth --scope $SCOPE_ID)
 ``` 
 The complete Json result should be added as a Github Secret on your repo
 ``` 
