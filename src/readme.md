@@ -245,7 +245,7 @@ az account set --subscription <your-subscription-id>
 az extension add --name authV2
 az webapp auth config-version upgrade --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME
 
-az webapp auth microsoft update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME  --client-id $API_APP_ID  --allowed-audiences $IDENTIFIER_URI --tenant-id $TENANT_ID
+az webapp auth microsoft update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME  --client-id $API_APP_ID  --allowed-audiences $IDENTIFIER_URI --issuer $ISSUER_URL
 az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled  --action Return401
 ```
 

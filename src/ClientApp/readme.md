@@ -46,7 +46,9 @@ az account set --subscription <your-subscription-id>
 3. Edit the **Microsoft Identity Provider** settings.
 4. Under **Client application requirements**, select **"Allow requests from specific client applications"**.
 5. Add the **$CLIENT_APP_ID** to the list of allowed client applications.
-6. Save your changes.
+6. Under **Tenant requirement**, select **"Allow requests from specific tenants"**.
+7. Add the **$TENANT_ID** to the list of allowed tenants.
+8. Save your changes.
 
 
 ## Create Azure Storage static website hosting
