@@ -118,7 +118,7 @@ gh auth login
 
 We need a Service Principal able to create resources on your subcription. You use one already created or create a new one with the folowing command
 ```
-export SCOPE_ID=$(az group show --name far-rg-severless --query id --output tsv)
+export SCOPE_ID=$(az group show --name ${RESOURCEGROUP} --query id --output tsv)
 
 export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor" --sdk-auth --scope $SCOPE_ID)
 ``` 

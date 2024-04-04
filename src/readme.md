@@ -21,11 +21,12 @@ Export the following environment variables:
 
 ```bash
 export LOCATION=<location>
-export RESOURCEGROUP=<resource-group>
+export RESOURCEGROUP_BASE_NAME=<resource-group>
 export APPNAME=<functionapp-name> # Cannot be more than 6 characters
 export APP_INSIGHTS_LOCATION=<application-insights-location>
 export COSMOSDB_DATABASE_NAME=${APPNAME}-db
 export COSMOSDB_DATABASE_COL=${APPNAME}-col
+export RESOURCEGROUP=${RESOURCEGROUP_BASE_NAME}-${LOCATION}
 ```
 
 > Note: This reference implementation uses Application Insights, an Azure resource that might not be available in [all regions](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=monitor). Ensure to select a region for `APP_INSIGHTS_LOCATION` that supports this resource, preferably the same as or nearest region to `LOCATION` for network performance and cost benefits.
