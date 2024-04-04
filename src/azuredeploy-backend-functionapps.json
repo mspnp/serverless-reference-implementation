@@ -260,6 +260,10 @@
                     {
                         "name": "COSMOSDB_DATABASE_COL",
                         "value": "[parameters('cosmosDatabaseCollection')]"
+                    },
+                    {
+                        "name": "FUNCTIONS_WORKER_RUNTIME",
+                        "value": "dotnet"
                     }
                 ]
             }
@@ -442,6 +446,10 @@
                     {
                         "name": "DeadLetterStorage",
                         "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('droneTelemetryDeadLetterStorageQueueAccountName'), ';AccountKey=', listKeys(variables('droneTelemetryDeadLetterStorageQueueAccountId'),'2015-05-01-preview').key1, ';EndpointSuffix=',environment().suffixes.storage)]"
+                    },
+                    {
+                        "name": "FUNCTIONS_WORKER_RUNTIME",
+                        "value": "dotnet"
                     }
                 ]
             }

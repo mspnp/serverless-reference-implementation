@@ -21,11 +21,12 @@ Export the following environment variables:
 
 ```bash
 export LOCATION=<location>
-export RESOURCEGROUP=<resource-group>
+export RESOURCEGROUP_BASE_NAME=<resource-group>
 export APPNAME=<functionapp-name> # Cannot be more than 6 characters
 export APP_INSIGHTS_LOCATION=<application-insights-location>
 export COSMOSDB_DATABASE_NAME=${APPNAME}-db
 export COSMOSDB_DATABASE_COL=${APPNAME}-col
+export RESOURCEGROUP=${RESOURCEGROUP_BASE_NAME}-${LOCATION}
 ```
 
 > Note: This reference implementation uses Application Insights, an Azure resource that might not be available in [all regions](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=monitor). Ensure to select a region for `APP_INSIGHTS_LOCATION` that supports this resource, preferably the same as or nearest region to `LOCATION` for network performance and cost benefits.
@@ -173,7 +174,7 @@ export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule ke
      -g $RESOURCEGROUP \
      --eventhub-name $APPNAME-eh  \
      --namespace-name $EH_NAMESPACE \
-     -n send \
+     --name send \
      --query primaryConnectionString --output tsv)
 
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
@@ -242,11 +243,11 @@ az account set --subscription <your-subscription-id>
 ### Configure Microsoft Entra ID authentication in the Function App
 
 ```bash
-az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled true \
---action LoginWithAzureActiveDirectory \
---aad-token-issuer-url $ISSUER_URL \
---aad-client-id $API_APP_ID \
---aad-allowed-token-audiences $IDENTIFIER_URI
+az extension add --name authV2
+az webapp auth config-version upgrade --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME
+
+az webapp auth microsoft update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME  --client-id $API_APP_ID  --allowed-audiences $IDENTIFIER_URI --issuer $ISSUER_URL
+az webapp auth update --resource-group $RESOURCEGROUP --name $DRONE_STATUS_FUNCTION_APP_NAME --enabled  --action Return401
 ```
 
 ### Assign application to user or role
@@ -279,7 +280,7 @@ export API_MANAGEMENT_SERVICE=$(az deployment group show \
 export API_POLICY_ID="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv1/policies/policy"
 az resource create --id $API_POLICY_ID \
     --properties "{
-        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/v2.0/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$API_APP_ID</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
+        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"${ISSUER_URL}.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"
 ```
 ## Open app 
