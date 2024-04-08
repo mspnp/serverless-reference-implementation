@@ -50,7 +50,7 @@ Deploy Azure resources.
 ```bash
 az deployment group create \
    -g ${RESOURCEGROUP} \
-   --template-file azuredeploy-backend-functionapps.json \
+   --template-file azuredeploy-backend-functionapps.bicep \
    --parameters appName=${APPNAME} \
    appInsightsLocation=${APP_INSIGHTS_LOCATION} \
    cosmosDatabaseName=${COSMOSDB_DATABASE_NAME} \

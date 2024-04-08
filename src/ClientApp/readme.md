@@ -75,7 +75,7 @@ See [Static website hosting in Azure Storage](https://learn.microsoft.com/azure/
 export CDN_NAME=<cdn name>
 
 # Create the CDN profile and endpoint
-az cdn profile create --location $LOCATION --resource-group $RESOURCEGROUP --name $CDN_NAME --sku Standard_Microsoft
+az cdn profile create --resource-group $RESOURCEGROUP --name $CDN_NAME --sku Standard_Microsoft
 export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resource-group $RESOURCEGROUP --profile-name $CDN_NAME --name $CDN_NAME \
 --no-http --origin $WEB_SITE_HOST --origin-host-header $WEB_SITE_HOST \
 --query hostName --output tsv)
