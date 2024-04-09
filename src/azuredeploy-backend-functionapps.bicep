@@ -27,6 +27,7 @@ var droneStatusStorageAccountName = toLower('${appName}ds${uniqueString(resource
 var droneTelemetryStorageAccountName = toLower('${appName}dt${uniqueString(resourceGroup().id)}')
 var droneTelemetryDeadLetterStorageQueueAccountName = toLower('${appName}dtq${uniqueString(resourceGroup().id)}')
 var hostingPlanName = appName
+var appServicePlanName = '${appName}-asp'
 var droneStatusFunctionAppName = '${appName}${uniqueString(resourceGroup().id)}-dronestatus'
 var droneTelemetryFunctionAppName = '${appName}${uniqueString(resourceGroup().id)}-dronetelemetry'
 var droneStatusStorageAccountId = '${resourceGroup().id}/providers/Microsoft.Storage/storageAccounts/${droneStatusStorageAccountName}'
@@ -146,6 +147,17 @@ resource droneTelemetryAppInsights 'Microsoft.Insights/components@2020-02-02' = 
   dependsOn: []
 }
 
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
+  name: appServicePlanName
+  location: location
+  sku: {
+    name: 'Y1'
+    tier: 'Dynamic'
+    size: 'Y1'
+  }
+  properties: { }
+}
+
 resource hostingPlan 'Microsoft.Web/serverfarms@2015-04-01' = {
   name: hostingPlanName
   location: location
@@ -174,7 +186,7 @@ resource cosmosDatabaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15
   }
 }
 
-resource droneStatusFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
+resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: droneStatusFunctionAppName
   location: location
   tags: {
@@ -182,8 +194,19 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
   }
   kind: 'functionapp'
   properties: {
-    serverFarmId: hostingPlan.id
+    enabled: true
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    redundancyMode: 'None'
+    publicNetworkAccess: 'Enabled'
+    keyVaultReferenceIdentity: 'SystemAssigned'
     siteConfig: {
+      netFrameworkVersion: 'v8.0'
+      numberOfWorkers: 1
+      alwaysOn: false
+      http20Enabled: false
+      functionAppScaleLimit: 200
+      minimumElasticInstanceCount: 0
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -227,7 +250,11 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'dotnet'
+          value: 'dotnet-isolated'
+        }
+        {
+          name: 'WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED'
+          value: '1'
         }
       ]
     }
@@ -237,12 +264,11 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
   ]
 }
 
-resource droneStatusFunctionAppName_slot 'Microsoft.Web/sites/slots@2016-08-01' = {
+resource droneStatusFunctionAppName_slot 'Microsoft.Web/sites/slots@2022-09-01' = {
   parent: droneStatusFunctionApp
   kind: 'functionapp'
   name: 'slotName'
   location: location
-  scale: null
   properties: {
     enabled: true
     reserved: false
@@ -253,7 +279,7 @@ resource droneStatusFunctionAppName_slot 'Microsoft.Web/sites/slots@2016-08-01' 
     cloningInfo: null
   }
   dependsOn: [
-    hostingPlan
+    appServicePlan
   ]
 }
 

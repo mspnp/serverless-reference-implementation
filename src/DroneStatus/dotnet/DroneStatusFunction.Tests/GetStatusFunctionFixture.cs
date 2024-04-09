@@ -1,19 +1,13 @@
 using DroneStatusFunctionApp;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Documents;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Moq;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Drawing.Imaging;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
-using Xunit;
+using System.Text.Json;
 
 namespace DroneStatusFunction.Tests
 {
@@ -34,10 +28,36 @@ namespace DroneStatusFunction.Tests
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("roles", GetStatusFunction.GetDeviceStatusRoleName)}));
-            var logger = new MockLogger();
+            var clientPrincipal = new
+            {
+                auth_typ = "test",
+                name_typ = "test",
+                role_typ = "test",
+                claims = new[]
+                    {
+                        new
+                        {
+                            typ = "roles",
+                            val = "GetStatus" 
+                        }
+                    }
+            };
 
-            var result = GetStatusFunction.Run(request.Object, null, principal, logger);
+            var json = JsonSerializer.Serialize(clientPrincipal);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            var encoded = Convert.ToBase64String(bytes);
+
+            var headers = new HeaderDictionary
+            {
+                { "x-ms-client-principal", encoded }
+            };
+            
+            request.SetupGet(r => r.Headers).Returns(headers);
+
+            var logger = new MockLogger();
+            var getStatusFunction = new GetStatusFunction(logger);
+
+            var result = getStatusFunction.Run  (request.Object, null);
 
             Assert.IsType<BadRequestObjectResult>(result);
         }
@@ -49,35 +69,64 @@ namespace DroneStatusFunction.Tests
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
 
-            var principal = new ClaimsPrincipal();
-            var logger = new MockLogger();
+            var headers = new HeaderDictionary();
 
-            var result = GetStatusFunction.Run(request.Object, null, principal, logger);
+            request.SetupGet(r => r.Headers).Returns(headers);
+
+            var logger = new MockLogger();
+            var getStatusFunction = new GetStatusFunction(logger);
+
+            var result = getStatusFunction.Run(request.Object, null);
 
             Assert.IsType<UnauthorizedResult>(result);
-            Assert.Contains(
-                logger.Entries,
-                e => e.logLevel == LogLevel.Warning && e.state is IEnumerable<KeyValuePair<string, object>> properties
-                    && properties.Any(p => p.Key == "roles" && (string)p.Value == GetStatusFunction.GetDeviceStatusRoleName));
         }
 
         [Fact]
         public void Function_ReturnsUnauthorized_ForPrincipalWithNonRequiredRoles()
         {
             var request = new Mock<HttpRequest>();
+            var mockLogger = new Mock<ILogger<GetStatusFunction>>();
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection());
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("SomeRole", "SomeOtherRole")}));
-            var logger = new MockLogger();
 
-            var result = GetStatusFunction.Run(request.Object, null, principal, logger);
+            var clientPrincipal = new
+            {
+                auth_typ = "test",
+                name_typ = "test",
+                role_typ = "test",
+                claims = new[]
+                    {
+                        new
+                        {
+                            typ = "roles",
+                            val = "SomeRole"
+                        },
+                         new
+                        {
+                            typ = "roles",
+                            val = "SomeRoleOtherRole"
+                        }
+                    }
+            };
+
+            var json = JsonSerializer.Serialize(clientPrincipal);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            var encoded = Convert.ToBase64String(bytes);
+
+            var headers = new HeaderDictionary
+            {
+                { "x-ms-client-principal", encoded }
+            };
+
+            request.SetupGet(r => r.Headers).Returns(headers);
+
+            var logger = new MockLogger();
+            var getStatusFunction = new GetStatusFunction(logger);
+
+            var result = getStatusFunction.Run(request.Object, null);
 
             Assert.IsType<UnauthorizedResult>(result);
-            Assert.Contains(
-                logger.Entries,
-                e => e.logLevel == LogLevel.Warning && e.state is IEnumerable<KeyValuePair<string, object>> properties
-                    && properties.Any(p => p.Key == "roles" && (string)p.Value == GetStatusFunction.GetDeviceStatusRoleName));
         }
 
         [Fact]
@@ -92,15 +141,40 @@ namespace DroneStatusFunction.Tests
             request.SetupGet(r => r.Query)
                 .Returns(new QueryCollection(queryValues));
 
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("roles", GetStatusFunction.GetDeviceStatusRoleName)}));
-            var logger = new MockLogger();
+            var clientPrincipal = new
+            {
+                auth_typ = "test",
+                name_typ = "test",
+                role_typ = "test",
+                claims = new[]
+                     {
+                        new
+                        {
+                            typ = "roles",
+                            val = "GetStatus"
+                        }
+                    }
+            };
 
-            var result = GetStatusFunction.Run(request.Object, null, principal, logger);
+            var json = JsonSerializer.Serialize(clientPrincipal);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            var encoded = Convert.ToBase64String(bytes);
+
+            var headers = new HeaderDictionary
+            {
+                { "x-ms-client-principal", encoded }
+            };
+            request.SetupGet(r => r.Headers).Returns(headers);
+
+            var logger = new MockLogger();
+            var getStatusFunction = new GetStatusFunction(logger);
+
+            var result = getStatusFunction.Run(request.Object, null);
 
             Assert.IsType<NotFoundResult>(result);
         }
 
-        private class MockLogger : ILogger
+        private class MockLogger : ILogger<GetStatusFunction>
         {
             public IDisposable BeginScope<TState>(TState state)
             {
