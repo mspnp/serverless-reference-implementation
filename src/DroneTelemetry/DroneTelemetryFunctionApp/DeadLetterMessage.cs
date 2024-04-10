@@ -1,5 +1,4 @@
 ﻿using Azure.Messaging.EventHubs;
-using System;
 
 namespace DroneTelemetryFunctionApp
 {

@@ -1,62 +1,46 @@
-using Microsoft.ApplicationInsights;
 using Azure.Messaging.EventHubs;
-using Microsoft.Azure.WebJobs;
+using Microsoft.ApplicationInsights;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
 
 namespace DroneTelemetryFunctionApp
 {
     public class RawTelemetryFunction
     {
-        private readonly ITelemetryProcessor telemetryProcessor;
-        
-        private readonly TelemetryClient telemetryClient;
+        private readonly ILogger<RawTelemetryFunction> _logger;
+        private readonly ITelemetryProcessor _telemetryProcessor;
+        private readonly TelemetryClient _telemetryClient;
 
-        public RawTelemetryFunction(ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient)
+        public RawTelemetryFunction(ILogger<RawTelemetryFunction> logger, ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient)
         {
-            this.telemetryProcessor = telemetryProcessor;
-            this.telemetryClient = telemetryClient;
+            _logger = logger;
+            _telemetryProcessor = telemetryProcessor;
+            _telemetryClient = telemetryClient;
         }
 
-        [FunctionName("RawTelemetryFunction")]
-        [StorageAccount("DeadLetterStorage")]
-        public async Task RunAsync(
-            [EventHubTrigger("%EventHubName%", Connection = "EventHubConnection", ConsumerGroup = "%EventHubConsumerGroup%")] EventData[] messages,
-            [Queue("deadletterqueue")] IAsyncCollector<DeadLetterMessage> deadLetterMessages,
-            [CosmosDB(
-                databaseName: "%COSMOSDB_DATABASE_NAME%",
-                collectionName: "%COSMOSDB_DATABASE_COL%",
-                ConnectionStringSetting = "COSMOSDB_CONNECTION_STRING")]
-                IAsyncCollector<DeviceState> devices,
-            ILogger logger)
+        [Function(nameof(RawTelemetryFunction))]
+        public RawTelemetryOutputType Run([EventHubTrigger("%EventHubName%", Connection = "EventHubConnection")] EventData[] messages,
+            FunctionContext context)
         {
-            telemetryClient.GetMetric("EventHubMessageBatchSize").TrackValue(messages.Length);
+            _telemetryClient.GetMetric("EventHubMessageBatchSize").TrackValue(messages.Length);
 
+            var rawTelemetryOutputType = new RawTelemetryOutputType();
             foreach (var message in messages)
             {
-                DeviceState deviceState = null;
-
                 try
                 {
-                    deviceState = telemetryProcessor.Deserialize(message.Body.ToArray(), logger);
-
-                    try
-                    {
-                        await devices.AddAsync(deviceState);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error updating status document", deviceState);
-                        await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message, DeviceState = deviceState });
-                    }
+                    var state = _telemetryProcessor.Deserialize(message.Body.ToArray(), _logger);
+                    rawTelemetryOutputType.DeviceState = new { id = state.DeviceId, state.Battery, state.FlightMode, state.Latitude, state.Longitude, state.Altitude, state.GyrometerOK, state.AccelerometerOK, state.MagnetometerOK };
+                    return rawTelemetryOutputType;
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error deserializing message", message.PartitionKey, message.SequenceNumber);
-                    await deadLetterMessages.AddAsync(new DeadLetterMessage { Exception = ex, EventData = message });
+                    _logger.LogError(ex, "Error deserializing message", message.PartitionKey, message.SequenceNumber);
+                    rawTelemetryOutputType.DeadLetterMessage = new DeadLetterMessage { Exception = ex, EventData = message };
                 }
             }
+
+            return rawTelemetryOutputType;
         }
     }
 }

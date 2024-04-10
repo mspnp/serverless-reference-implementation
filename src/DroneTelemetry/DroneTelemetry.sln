@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31624.102
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34701.34
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DroneTelemetryFunction.Tests", "DroneTelemetryFunction.Tests\DroneTelemetryFunction.Tests.csproj", "{D9173A30-34AF-4219-9213-BA2B4C84D29E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DroneTelemetryFunctionApp", "DroneTelemetryFunctionApp\DroneTelemetryFunctionApp.csproj", "{CD7B2C36-0692-4671-9B76-7D3C4F5F2C58}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serverless.Serialization", "..\TelemetrySerialization\Serverless.Serialization\Serverless.Serialization.csproj", "{6B5E957B-CA09-4762-8E10-8AAC26C70886}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serverless.Serialization", "..\TelemetrySerialization\Serverless.Serialization\Serverless.Serialization.csproj", "{58DB738C-2701-4E3D-B4FD-B84512DB2EA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DroneTelemetryFunctionApp", "DroneTelemetryFunctionApp\DroneTelemetryFunctionApp.csproj", "{80FAB445-C8AC-41CB-9A61-F2B977F2D0CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DroneTelemetryFunction.Tests", "DroneTelemetryFunction.Tests\DroneTelemetryFunction.Tests.csproj", "{89C7402A-ED76-4AB2-AAD3-1F45EBA71B44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,23 +15,23 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D9173A30-34AF-4219-9213-BA2B4C84D29E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D9173A30-34AF-4219-9213-BA2B4C84D29E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D9173A30-34AF-4219-9213-BA2B4C84D29E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D9173A30-34AF-4219-9213-BA2B4C84D29E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B5E957B-CA09-4762-8E10-8AAC26C70886}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B5E957B-CA09-4762-8E10-8AAC26C70886}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B5E957B-CA09-4762-8E10-8AAC26C70886}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B5E957B-CA09-4762-8E10-8AAC26C70886}.Release|Any CPU.Build.0 = Release|Any CPU
-		{80FAB445-C8AC-41CB-9A61-F2B977F2D0CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{80FAB445-C8AC-41CB-9A61-F2B977F2D0CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{80FAB445-C8AC-41CB-9A61-F2B977F2D0CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{80FAB445-C8AC-41CB-9A61-F2B977F2D0CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD7B2C36-0692-4671-9B76-7D3C4F5F2C58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD7B2C36-0692-4671-9B76-7D3C4F5F2C58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD7B2C36-0692-4671-9B76-7D3C4F5F2C58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD7B2C36-0692-4671-9B76-7D3C4F5F2C58}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58DB738C-2701-4E3D-B4FD-B84512DB2EA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58DB738C-2701-4E3D-B4FD-B84512DB2EA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58DB738C-2701-4E3D-B4FD-B84512DB2EA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58DB738C-2701-4E3D-B4FD-B84512DB2EA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89C7402A-ED76-4AB2-AAD3-1F45EBA71B44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89C7402A-ED76-4AB2-AAD3-1F45EBA71B44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89C7402A-ED76-4AB2-AAD3-1F45EBA71B44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89C7402A-ED76-4AB2-AAD3-1F45EBA71B44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {B504E1AD-185E-4EF9-BBCC-9DF57EF882AE}
+		SolutionGuid = {BCF3B974-8FDF-4E00-AB77-F4F0108DE637}
 	EndGlobalSection
 EndGlobal

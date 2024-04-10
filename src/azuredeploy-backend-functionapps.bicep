@@ -26,7 +26,6 @@ param location string = resourceGroup().location
 var droneStatusStorageAccountName = toLower('${appName}ds${uniqueString(resourceGroup().id)}')
 var droneTelemetryStorageAccountName = toLower('${appName}dt${uniqueString(resourceGroup().id)}')
 var droneTelemetryDeadLetterStorageQueueAccountName = toLower('${appName}dtq${uniqueString(resourceGroup().id)}')
-var hostingPlanName = appName
 var appServicePlanName = '${appName}-asp'
 var droneStatusFunctionAppName = '${appName}${uniqueString(resourceGroup().id)}-dronestatus'
 var droneTelemetryFunctionAppName = '${appName}${uniqueString(resourceGroup().id)}-dronetelemetry'
@@ -158,16 +157,6 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   properties: { }
 }
 
-resource hostingPlan 'Microsoft.Web/serverfarms@2015-04-01' = {
-  name: hostingPlanName
-  location: location
-  properties: {
-    name: hostingPlanName
-    computeMode: 'Dynamic'
-    sku: 'Dynamic'
-  }
-}
-
 resource cosmosDatabaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15-preview' = {
   name: cosmosDatabaseAccountName
   location: location
@@ -207,6 +196,7 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
       http20Enabled: false
       functionAppScaleLimit: 200
       minimumElasticInstanceCount: 0
+      use32BitWorkerProcess: false
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -336,7 +326,7 @@ resource eventHubNamespace 'Microsoft.EventHub/namespaces@2022-10-01-preview' = 
   }
 }
 
-resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
+resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: droneTelemetryFunctionAppName
   location: location
   tags: {
@@ -344,8 +334,20 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
   }
   kind: 'functionapp'
   properties: {
-    serverFarmId: hostingPlan.id
+    enabled: true
+    serverFarmId: appServicePlan.id
+    httpsOnly: true
+    redundancyMode: 'None'
+    publicNetworkAccess: 'Enabled'
+    keyVaultReferenceIdentity: 'SystemAssigned'
     siteConfig: {
+      netFrameworkVersion: 'v8.0'
+      numberOfWorkers: 1
+      alwaysOn: false
+      http20Enabled: false
+      functionAppScaleLimit: 200
+      minimumElasticInstanceCount: 0      
+      use32BitWorkerProcess: false
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -405,7 +407,11 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2015-08-01' = {
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'dotnet'
+          value: 'dotnet-isolated'
+        }
+        {
+          name: 'WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED'
+          value: '1'
         }
       ]
     }
