@@ -1,7 +1,10 @@
 using Azure.Messaging.EventHubs;
+using Azure.Storage.Queues;
 using Microsoft.ApplicationInsights;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace DroneTelemetryFunctionApp
 {
@@ -19,28 +22,55 @@ namespace DroneTelemetryFunctionApp
         }
 
         [Function(nameof(RawTelemetryFunction))]
-        public RawTelemetryOutputType Run([EventHubTrigger("%EventHubName%", Connection = "EventHubConnection")] EventData[] messages,
+        public async Task RunAsync([EventHubTrigger("%EventHubName%", Connection = "EventHubConnection")] EventData[] messages,
             FunctionContext context)
         {
             _telemetryClient.GetMetric("EventHubMessageBatchSize").TrackValue(messages.Length);
+            DeviceState? deviceState = null;
+            // Create a new CosmosClient
+            var cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING"));
 
-            var rawTelemetryOutputType = new RawTelemetryOutputType();
+            // Get a reference to the database and the container
+            var database = cosmosClient.GetDatabase(Environment.GetEnvironmentVariable("COSMOSDB_DATABASE_NAME"));
+            var container = database.GetContainer(Environment.GetEnvironmentVariable("COSMOSDB_DATABASE_COL"));
+
+            // Create a new QueueClient
+            var queueClient = new QueueClient(Environment.GetEnvironmentVariable("DeadLetterStorage"), "deadletterqueue");
+            await queueClient.CreateIfNotExistsAsync();
+
             foreach (var message in messages)
             {
                 try
                 {
-                    var state = _telemetryProcessor.Deserialize(message.Body.ToArray(), _logger);
-                    rawTelemetryOutputType.DeviceState = new { id = state.DeviceId, state.Battery, state.FlightMode, state.Latitude, state.Longitude, state.Altitude, state.GyrometerOK, state.AccelerometerOK, state.MagnetometerOK };
-                    return rawTelemetryOutputType;
+                    deviceState = _telemetryProcessor.Deserialize(message.Body.ToArray(), _logger);
+                    try
+                    {
+                        // Add the device state to Cosmos DB
+                        await container.UpsertItemAsync(deviceState, new PartitionKey(deviceState.DeviceId));
+                    }
+                    catch (Exception ex)
+                    {
+                         _logger.LogError(ex, "Error saving on database", message.PartitionKey, message.SequenceNumber);
+                        var deadLetterMessage = new DeadLetterMessage { Exception = ex.StackTrace, EventData = message.Body.ToArray(), DeviceState = deviceState };
+                        // Convert the dead letter message to a string
+                        var deadLetterMessageString = JsonConvert.SerializeObject(deadLetterMessage);
+
+                        // Send the message to the queue
+                        await queueClient.SendMessageAsync(deadLetterMessageString);
+                    }
+
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error deserializing message", message.PartitionKey, message.SequenceNumber);
-                    rawTelemetryOutputType.DeadLetterMessage = new DeadLetterMessage { Exception = ex, EventData = message };
+                    var deadLetterMessage = new DeadLetterMessage { Exception = ex.StackTrace, EventData = message.Body.ToArray(), DeviceState = deviceState };
+                    // Convert the dead letter message to a string
+                    var deadLetterMessageString = JsonConvert.SerializeObject(deadLetterMessage);
+
+                    // Send the message to the queue
+                    await queueClient.SendMessageAsync(deadLetterMessageString);
                 }
             }
-
-            return rawTelemetryOutputType;
         }
     }
 }
