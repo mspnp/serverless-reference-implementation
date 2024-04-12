@@ -4,8 +4,8 @@ namespace DroneTelemetryFunctionApp
 {
     public class DeadLetterMessage
     {
-        public string? Exception { get; set; }
-        public byte[]? EventData { get; set; }
+        public string? Issue { get; set; }
+        public byte[]? MessageBody { get; set; }
         public DeviceState? DeviceState { get; set; }
     }
 }

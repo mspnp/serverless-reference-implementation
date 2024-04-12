@@ -51,7 +51,7 @@ namespace DroneTelemetryFunctionApp
                     catch (Exception ex)
                     {
                          _logger.LogError(ex, "Error saving on database", message.PartitionKey, message.SequenceNumber);
-                        var deadLetterMessage = new DeadLetterMessage { Exception = ex.StackTrace, EventData = message.Body.ToArray(), DeviceState = deviceState };
+                        var deadLetterMessage = new DeadLetterMessage { Issue = ex.Message, MessageBody = message.Body.ToArray(), DeviceState = deviceState };
                         // Convert the dead letter message to a string
                         var deadLetterMessageString = JsonConvert.SerializeObject(deadLetterMessage);
 
@@ -63,7 +63,7 @@ namespace DroneTelemetryFunctionApp
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error deserializing message", message.PartitionKey, message.SequenceNumber);
-                    var deadLetterMessage = new DeadLetterMessage { Exception = ex.StackTrace, EventData = message.Body.ToArray(), DeviceState = deviceState };
+                    var deadLetterMessage = new DeadLetterMessage { Issue = ex.Message, MessageBody = message.Body.ToArray(), DeviceState = deviceState };
                     // Convert the dead letter message to a string
                     var deadLetterMessageString = JsonConvert.SerializeObject(deadLetterMessage);
 
