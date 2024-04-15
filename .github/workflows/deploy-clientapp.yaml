@@ -31,6 +31,11 @@ on:
         description: "Repo branch which want to deploy"
         required: true
         default: "main"
+        
+permissions:
+      id-token: write
+      contents: read
+
 jobs:
   deployClientApp:
     runs-on: ubuntu-latest
