@@ -111,12 +111,11 @@ git push newremote master
  The GitHub Action integration is using [OpenID Connect (OIDC) with an Azure service principal using a Federated Identity Credential](https://learn.microsoft.com/azure/developer/github/connect-from-azure)
 
    1. Install [GitHub Cli](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#official-sources).  
-
      Then you will need to login GitHib Cli
 
-     ```
-        gh auth login
-     ```
+       ```bash
+          gh auth login
+       ```
 
    1. Create Microsoft Entra application and service principal and then assign a role on your subscription to your application so that your workflow has access to your subscription.  
 
@@ -124,6 +123,7 @@ git push newremote master
          GH_ACTION_FEDERATED_IDENTITY=$(az ad app create --display-name ghActionFederatedIdentity)
          GH_ACTION_FEDERATED_IDENTITY_APP_ID=$(echo $GH_ACTION_FEDERATED_IDENTITY | jq -r '.appId')
          GH_ACTION_FEDERATED_IDENTITY_OBJECT_ID=$(echo $GH_ACTION_FEDERATED_IDENTITY | jq -r '.id')
+
          GH_ACTION_FEDERATED_IDENTITY_SP=$(az ad sp create --id $GH_ACTION_FEDERATED_IDENTITY_APP_ID)
          GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID=$(echo $GH_ACTION_FEDERATED_IDENTITY_SP | jq -r '.id')
        ```
@@ -132,15 +132,14 @@ git push newremote master
 
        ```bash
          AZURE_SUBSCRIPTION_ID=$(az account show --query 'id' -o tsv)
-         AZURE_SUBSCRIPTION_RESOURCE_ID=/subscriptions/$(az account show --query 'id' -o tsv)
+         AZURE_RESOURCEGROUP_RESOURCE_ID=$(az group show --name ${RESOURCEGROUP} --query id -o tsv)
        ```
 
-       Create a new role assignment by subscription and object
+       Create a new role assignment
 
        ```bash
-         # Assign built-in Contributor RBAC role for creating resource groups and performing deployments at the subscription level
-         az role assignment create --role contributor --subscription $AZURE_SUBSCRIPTION_ID --assignee-object-id  $GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope $AZURE_SUBSCRIPTION_RESOURCE_ID
-
+         # Assign built-in Contributor RBAC role for creating resource groups and performing deployments at the resource group level
+         az role assignment create --role contributor --subscription $AZURE_SUBSCRIPTION_ID --assignee-object-id  $GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope $AZURE_RESOURCEGROUP_RESOURCE_ID
        ```
 
    1. Add federated credentials
