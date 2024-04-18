@@ -31,6 +31,11 @@ on:
         description: "Repo branch which want to deploy"
         required: true
         default: "main"
+        
+permissions:
+      id-token: write
+      contents: write
+
 jobs:
   deployClientApp:
     runs-on: ubuntu-latest
@@ -98,10 +103,14 @@ jobs:
             'Fabrikam Drone Status App ${{ steps.gitversion.outputs.fullSemVer }}'
           draft: true
           prerelease: false
-      - name: Azure Login
-        uses: Azure/login@v1
+      # Login into your Azure Subscription using your Azure credentials - make sure the credentials has write permissions for the specific resource group/subscription. The credentials should be stored in GitHub Secrets - (Go to Settings Tab ->Secrets)
+      - name: 'Az CLI login'
+        uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            auth-type: SERVICE_PRINCIPAL
       - name: Upload to Azure Storage static website hosting and purge Azure CDN endpoint
         uses: azure/CLI@v1
         with:
