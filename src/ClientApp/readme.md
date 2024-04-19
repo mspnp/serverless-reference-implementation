@@ -117,7 +117,7 @@ git push newremote master
           gh auth login
        ```
 
-   1. Create Microsoft Entra application and service principal and then assign a role on your subscription to your application so that your workflow has access to your subscription.  
+   1. Create a Microsoft Entra application and service principal then assign a role on your subscription to your application so that your workflow has access to your subscription.  
 
        ```bash
          GH_ACTION_FEDERATED_IDENTITY=$(az ad app create --display-name ghActionFederatedIdentity)
