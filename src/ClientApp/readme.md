@@ -150,7 +150,7 @@ git push newremote master
           sed -i "s/<repo_owner>/${GITHUB_USER}/g" ../.github/workflows/credential.json
        ```
 
-       Then, the federated credential need to be created.
+       Then, the federated credential needs to be created.
 
        ```bash
          az ad app federated-credential create --id $GH_ACTION_FEDERATED_IDENTITY_OBJECT_ID --parameters ../.github/workflows/credential.json
