@@ -50,7 +50,6 @@ az account set --subscription <your-subscription-id>
 7. Add the **$TENANT_ID** to the list of allowed tenants.
 8. Save your changes.
 
-
 ## Create Azure Storage static website hosting
 
 ```bash
@@ -109,26 +108,66 @@ git push newremote master
 
 ## Setup GitHub Action Workflow
 
-Install [GitHub Cli](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#official-sources).
+ The GitHub Action integration uses [OpenID Connect (OIDC) with an Azure service principal using a Federated Identity Credential](https://learn.microsoft.com/azure/developer/github/connect-from-azure)
 
-Then you will need to login GitHib Cli 
-```
-gh auth login
-```
+   1. Install [GitHub CLI](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#official-sources).  
+     Then you will need to login via the GitHib CLI
 
-We need a Service Principal able to create resources on your subcription. You use one already created or create a new one with the folowing command
-```
-export SCOPE_ID=$(az group show --name ${RESOURCEGROUP} --query id --output tsv)
+       ```bash
+          gh auth login
+       ```
 
-export SP_DETAILS=$(az ad sp create-for-rbac --role="Contributor" --sdk-auth --scope $SCOPE_ID)
-``` 
-The complete Json result should be added as a Github Secret on your repo
-``` 
-export GH_USER=$(gh repo view --json owner -q .owner.login)
-gh secret set AZURE_CREDENTIALS --body "$SP_DETAILS" --repo $GH_USER/serverless-reference-implementation
-``` 
+   1. Create a Microsoft Entra application and service principal then assign a role on your subscription to your application so that your workflow has access to your subscription.  
+
+       ```bash
+         GH_ACTION_FEDERATED_IDENTITY=$(az ad app create --display-name ghActionFederatedIdentity)
+         GH_ACTION_FEDERATED_IDENTITY_APP_ID=$(echo $GH_ACTION_FEDERATED_IDENTITY | jq -r '.appId')
+         GH_ACTION_FEDERATED_IDENTITY_OBJECT_ID=$(echo $GH_ACTION_FEDERATED_IDENTITY | jq -r '.id')
+
+         GH_ACTION_FEDERATED_IDENTITY_SP=$(az ad sp create --id $GH_ACTION_FEDERATED_IDENTITY_APP_ID)
+         GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID=$(echo $GH_ACTION_FEDERATED_IDENTITY_SP | jq -r '.id')
+       ```
+
+       Set environment information
+
+       ```bash
+         AZURE_SUBSCRIPTION_ID=$(az account show --query 'id' -o tsv)
+         AZURE_RESOURCEGROUP_RESOURCE_ID=$(az group show --name ${RESOURCEGROUP} --query id -o tsv)
+       ```
+
+       Create a new role assignment
+
+       ```bash
+         # Assign built-in Contributor RBAC role for creating resource groups and performing deployments at the resource group level
+         az role assignment create --role contributor --subscription $AZURE_SUBSCRIPTION_ID --assignee-object-id  $GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope $AZURE_RESOURCEGROUP_RESOURCE_ID
+       ```
+
+   1. Add federated credentials
+
+       First, the ./github-workflow/credential.json file needs to be customized with the repository owner.
+
+       ```bash
+          sed -i "s/<repo_owner>/${GITHUB_USER}/g" ../.github/workflows/credential.json
+       ```
+
+       Then, the federated credential needs to be created.
+
+       ```bash
+         az ad app federated-credential create --id $GH_ACTION_FEDERATED_IDENTITY_OBJECT_ID --parameters ../.github/workflows/credential.json
+       ```
+
+   1. Create secrets for AZURE_CLIENT_ID, AZURE_TENANT_ID, and AZURE_SUBSCRIPTION_ID.  
+       Use these values from your Microsoft Entra application for your GitHub secrets:
+
+       ```bash
+         export TENANT_ID_GHACTION=$(az account show --query tenantId --output tsv)
+         gh secret set AZURE_CLIENT_ID -b"${GH_ACTION_FEDERATED_IDENTITY_APP_ID}" --repo $GH_USER/serverless-reference-implementation
+         gh secret set AZURE_TENANT_ID -b"${TENANT_ID_GHACTION}" --repo $GH_USER/serverless-reference-implementation
+         gh secret set AZURE_SUBSCRIPTION_ID -b"${AZURE_SUBSCRIPTION_ID}" --repo $GH_USER/serverless-reference-implementation
+       ```
 
 ## Create variables and kickoff first CI/CD run
+
 ```
 export APIM_GATEWAY_URL=$(az deployment group show \
                                     --resource-group ${RESOURCEGROUP} \
@@ -151,7 +190,8 @@ gh run view <yourId>
 # To see the full job log, try: gh run view --log --job=8644697022
 # and you could get good information running that: gh run view --log --job=8644697022
 ```
-Wait till the GitHub Action is complete
+
+Wait until the GitHub Action is complete
 
 ## Configure Dynamic Site Acceleration
 

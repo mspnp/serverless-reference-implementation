@@ -2,9 +2,10 @@
 
 ## Prerequisites
 
-- [.NET 6.0](https://www.microsoft.com/net/download)
+- [.NET 8.0](https://www.microsoft.com/net/download)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.39.0 or higher
 - [SED](https://www.gnu.org/software/sed/)
+- [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-csharp#install-the-azure-functions-core-tools)
 
 Clone or download this repo locally.
 
@@ -94,20 +95,10 @@ export DRONE_STATUS_FUNCTION_APP_NAME=$(az deployment group show \
                                     --query properties.outputs.droneStatusFunctionAppName.value \
                                     -o tsv)
 
-# Publish the function to a local directory
-dotnet publish DroneStatus/dotnet/DroneStatusFunctionApp/ \
-       --configuration Release \
-       --output `pwd`/dronestatus-publish
-(cd dronestatus-publish && zip -r DroneStatusFunction.zip *)
-
-# Alternatively, if you have Microsoft Visual Studio installed:
-# dotnet publish /p:PublishProfile=Azure /p:Configuration=Release
-
 # Deploy the function to the function app
-az functionapp deployment source config-zip \
-   --src dronestatus-publish/DroneStatusFunction.zip \
-   -g $RESOURCEGROUP \
-   -n ${DRONE_STATUS_FUNCTION_APP_NAME}
+cd DroneStatus/dotnet/DroneStatusFunctionApp/
+func azure functionapp publish ${DRONE_STATUS_FUNCTION_APP_NAME}
+cd ../../..
 ```
 
 Deploy the drone telemetry function
@@ -120,20 +111,10 @@ export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az deployment group show \
                                     --query properties.outputs.droneTelemetryFunctionAppName.value \
                                     -o tsv)
 
-# Publish the function to a local directory
-dotnet publish DroneTelemetry/DroneTelemetryFunctionApp/ \
-       --configuration Release \
-       --output `pwd`/dronetelemetry-publish
-(cd dronetelemetry-publish && zip -r DroneTelemetryFunction.zip *)
-
-# Alternatively, if you have Microsoft Visual Studio installed:
-##dotnet publish /p:PublishProfile=Azure /p:Configuration=Release
-
 # Deploy the function to the function app
-az functionapp deployment source config-zip \
-   --src dronetelemetry-publish/DroneTelemetryFunction.zip \
-   -g $RESOURCEGROUP \
-   -n ${DRONE_TELEMETRY_FUNCTION_APP_NAME}
+cd ./DroneTelemetry/DroneTelemetryFunctionApp/
+func azure functionapp publish ${DRONE_TELEMETRY_FUNCTION_APP_NAME}
+cd ./../..
 ```
 
 ## Deploy the API Management gateway

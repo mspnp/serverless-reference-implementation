@@ -1,36 +1,39 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 
 namespace DroneStatusFunctionApp
 {
-    public static class GetStatusFunction
+    public class GetStatusFunction
     {
         public const string GetDeviceStatusRoleName = "GetStatus";
 
-        [FunctionName("GetStatusFunction")]
-        public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
-            [CosmosDB(
-                databaseName: "%COSMOSDB_DATABASE_NAME%",
-                collectionName: "%COSMOSDB_DATABASE_COL%",
-                ConnectionStringSetting = "COSMOSDB_CONNECTION_STRING",
-                Id = "{Query.deviceId}",
-                PartitionKey = "{Query.deviceId}")] dynamic deviceStatus,
-            ClaimsPrincipal principal,
-            ILogger log)
-        {
-            log.LogInformation("Processing GetStatus request.");
+        private readonly ILogger<GetStatusFunction> _logger;
 
-            if (!principal.IsAuthorizedByRoles(new[] { GetDeviceStatusRoleName }, log))
+        public GetStatusFunction(ILogger<GetStatusFunction> logger)
+        {
+            _logger = logger;
+        }
+
+        [Function("GetStatusFunction")]
+        public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req,
+        [CosmosDBInput(
+           databaseName: "%COSMOSDB_DATABASE_NAME%",
+           containerName:"%COSMOSDB_DATABASE_COL%",
+           Connection  = "COSMOSDB_CONNECTION_STRING",
+           Id = "{Query.deviceId}",
+           PartitionKey = "{Query.deviceId}")] DeviceState? deviceStatus)
+        {
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+
+            var principal = ClaimsPrincipalParser.Parse(req);
+            if (principal == null || !principal.IsAuthorizedByRoles([GetDeviceStatusRoleName], _logger))
             {
                 return new UnauthorizedResult();
             }
 
-            string deviceId = req.Query["deviceId"];
+            string? deviceId = req.Query["deviceId"];
             if (deviceId == null)
             {
                 return new BadRequestObjectResult("Missing DeviceId");
