@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [.NET 6.0](https://www.microsoft.com/net/download)
+- [.NET 8.0](https://www.microsoft.com/net/download)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest), version 2.39.0 or higher
 - [SED](https://www.gnu.org/software/sed/)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local?pivots=programming-language-csharp#install-the-azure-functions-core-tools)
