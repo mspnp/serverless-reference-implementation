@@ -110,8 +110,8 @@ git push newremote master
 
  The GitHub Action integration uses [OpenID Connect (OIDC) with an Azure service principal using a Federated Identity Credential](https://learn.microsoft.com/azure/developer/github/connect-from-azure)
 
-   1. Install [GitHub Cli](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#official-sources).  
-     Then you will need to login GitHib Cli
+   1. Install [GitHub CLI](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#official-sources).  
+     Then you will need to login via the GitHib CLI
 
        ```bash
           gh auth login
