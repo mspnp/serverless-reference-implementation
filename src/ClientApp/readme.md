@@ -191,7 +191,7 @@ gh run view <yourId>
 # and you could get good information running that: gh run view --log --job=8644697022
 ```
 
-Wait till the GitHub Action is complete
+Wait until the GitHub Action is complete
 
 ## Configure Dynamic Site Acceleration
 
