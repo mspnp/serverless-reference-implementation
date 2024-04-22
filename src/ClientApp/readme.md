@@ -161,9 +161,9 @@ git push newremote master
 
        ```bash
          export TENANT_ID_GHACTION=$(az account show --query tenantId --output tsv)
-         gh secret set AZURE_CLIENT_ID -b"${GH_ACTION_FEDERATED_IDENTITY_APP_ID}" --repo $GH_USER/serverless-reference-implementation
-         gh secret set AZURE_TENANT_ID -b"${TENANT_ID_GHACTION}" --repo $GH_USER/serverless-reference-implementation
-         gh secret set AZURE_SUBSCRIPTION_ID -b"${AZURE_SUBSCRIPTION_ID}" --repo $GH_USER/serverless-reference-implementation
+         gh secret set AZURE_CLIENT_ID -b"${GH_ACTION_FEDERATED_IDENTITY_APP_ID}" --repo $GITHUB_USER/serverless-reference-implementation
+         gh secret set AZURE_TENANT_ID -b"${TENANT_ID_GHACTION}" --repo $GITHUB_USER/serverless-reference-implementation
+         gh secret set AZURE_SUBSCRIPTION_ID -b"${AZURE_SUBSCRIPTION_ID}" --repo $GITHUB_USER/serverless-reference-implementation
        ```
 
 ## Create variables and kickoff first CI/CD run

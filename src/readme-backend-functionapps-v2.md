@@ -49,7 +49,7 @@ Compile the new API version
 
 ```bash
 cd DroneStatus/nodejs
-func azure functionapp publish ${APPNAME}-dsv2-funcapp --javascript
+func azure functionapp publish ${APPNAME}-dsv2-funcapp --typescript
 cd  ./../../
 
 ```

@@ -23,7 +23,10 @@ function getResultIfUnauthorized(req, authorizeClaims, logger) {
     const principal = req.headers[clientPrincipalHeaderKey.toLocaleLowerCase()];
     if (!principal) {
         logger.error('The request does not contain the required header %s', clientPrincipalHeaderKey);
-        return { status: 401, body: { error: 'Unauthorized' } }
+        return { status: 401, body: 'Unauthorized',
+        headers: {
+          'Content-Type': 'text/plain'
+      }}
     }
 
     let claims = undefined;
@@ -32,10 +35,16 @@ function getResultIfUnauthorized(req, authorizeClaims, logger) {
         claims = JSON.parse(token)['claims'];
     } catch (error) {
         logger.error('The value of header %s does not contain the expected information', clientPrincipalHeaderKey);
-        return { status: 401, body: { error: 'Unauthorized' } }
+        return { status: 401, body: 'Unauthorized',
+        headers: {
+          'Content-Type': 'text/plain'
+      } }
     }
 
-    return authorizeClaims(claims, logger) ? null : { status: 401, body: { error: 'Unauthorized' } };
+    return authorizeClaims(claims, logger) ? null : { status: 401, body: 'Unauthorized'  ,
+    headers: {
+      'Content-Type': 'text/plain'
+    }};
 };
 
 function createPrincipalWithRoles(roles) {
