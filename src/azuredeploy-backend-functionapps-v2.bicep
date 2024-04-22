@@ -105,6 +105,14 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: hostingPlan.id
     siteConfig: {
+      nodeVersion: 'NODE|18-lts'
+      netFrameworkVersion: 'v8.0'
+      numberOfWorkers: 1
+      alwaysOn: false
+      http20Enabled: false
+      functionAppScaleLimit: 200
+      minimumElasticInstanceCount: 0
+      use32BitWorkerProcess: false
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -148,7 +156,7 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~14'
+          value: '~18'
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
