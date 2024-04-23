@@ -35,7 +35,7 @@ resource droneStatusStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01
     name: storageAccountType
   }
   tags: {
-    displayName: 'Drone Status Function App '
+    displayName: 'Drone Status Function App'
   }
   kind: 'Storage'
   properties: {
