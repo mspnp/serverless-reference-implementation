@@ -36,9 +36,9 @@ Create the new Function App Server
 # create function app
 az deployment group create \
    -g ${RESOURCEGROUP} \
-   --template-file azuredeploy-backend-functionapps-v2.json \
+   --template-file azuredeploy-backend-functionapps-v2.bicep \
    --parameters appName=${APPNAME} \
-                cosmosDatabaseAccount=${COSMOSDB_DATABASE_ACCOUNT} \
+                cosmosDatabaseAccountName=${COSMOSDB_DATABASE_ACCOUNT} \
                 cosmosDatabaseName=${COSMOSDB_DATABASE_NAME} \
                 cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
 ```
@@ -48,40 +48,36 @@ az deployment group create \
 Compile the new API version
 
 ```bash
-cd DroneStatus/nodejs && \
-npm install && \
-npm run build && \
-npm prune --production && \
-zip -r DroneStatusFunction-nodejs.zip * --exclude .funcignore && \
-mkdir -p ./../../dronestatus-nodejs-publish/  && \
-mv DroneStatusFunction-nodejs.zip ./../../dronestatus-nodejs-publish/.  && \
+cd DroneStatus/nodejs
+func azure functionapp publish ${APPNAME}-dsv2-funcapp --typescript
 cd  ./../../
+
 ```
 
 ## step 5
 
-Deploy the drone status function to the new function app
+Enable security to the new Azure Function App Server. The values are the same as they were in the v1 deploy.
 
 ```bash
-az functionapp deployment source config-zip \
-   --src dronestatus-nodejs-publish/DroneStatusFunction-nodejs.zip \
-   -g $RESOURCEGROUP \
-   -n ${APPNAME}-dsv2-funcapp
+az webapp auth config-version upgrade --resource-group $RESOURCEGROUP --name ${APPNAME}-dsv2-funcapp
+
+az webapp auth microsoft update --resource-group $RESOURCEGROUP --name ${APPNAME}-dsv2-funcapp  --client-id $API_APP_ID  --allowed-audiences $IDENTIFIER_URI --issuer $ISSUER_URL
+az webapp auth update --resource-group $RESOURCEGROUP --name ${APPNAME}-dsv2-funcapp --enabled  --action Return401
+
 ```
+
+### Allow client app contact Done Status v2 Function App
+
+1. **Navigate to the Done Status v2 Function App**.
+2. Go to the **Authentication** section.
+3. Edit the **Microsoft Identity Provider** settings.
+4. Under **Client application requirements**, select **"Allow requests from specific client applications"**.
+5. Add the **$CLIENT_APP_ID** to the list of allowed client applications.
+6. Under **Tenant requirement**, select **"Allow requests from specific tenants"**.
+7. Add the **$TENANT_ID** to the list of allowed tenants.
+8. Save your changes.
 
 ## step 6
-
-Enable security to the new Azure Function App Server. The values are the same than v1 deploy.
-
-```bash
-az webapp auth update --resource-group $RESOURCEGROUP --name ${APPNAME}-dsv2-funcapp --enabled true \
---action LoginWithAzureActiveDirectory \
---aad-token-issuer-url $ISSUER_URL \
---aad-client-id $API_APP_ID \
---aad-allowed-token-audiences $IDENTIFIER_URI
-```
-
-## step 7
 
 Deploy API management v2
 Get the function key for the new DroneStatus function.
@@ -113,7 +109,7 @@ az deployment group create \
 		     functionAppUrlV2=${FUNCTIONAPP_URL_V2}
 ```
 
-## step 8
+## step 7
 
 Create API Management policies
 
@@ -126,11 +122,11 @@ export API_MANAGEMENT_SERVICE=$(az deployment group show \
 export API_POLICY_ID_V2="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv2/policies/policy"
 az resource create --id $API_POLICY_ID_V2 \
     --properties "{
-        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"https://login.microsoftonline.com/$TENANT_ID/.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
+        \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"${ISSUER_URL}.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"
 ```
 
-## step 9
+## step 8
 
 The client app need to be changed to use the new api version
 We need to change config.js to use `v2`
@@ -145,7 +141,7 @@ export const getApiConfig = () =>
 }
 ```
 
-## step 10
+## step 9
 
 The ClientApp deploy need to be trigger again
 After checking the new version is deployed `$CLIENT_URL/semver.txt`, the new nodejs Azure Function is executed. 
