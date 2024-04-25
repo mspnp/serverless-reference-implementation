@@ -56,7 +56,7 @@ cd  ./../../
 
 ## step 5
 
-Enable security to the new Azure Function App Server. The values are the same than v1 deploy.
+Enable security to the new Azure Function App Server. The values are the same as they were in the v1 deploy.
 
 ```bash
 az webapp auth config-version upgrade --resource-group $RESOURCEGROUP --name ${APPNAME}-dsv2-funcapp
