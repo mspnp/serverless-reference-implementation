@@ -21,7 +21,7 @@
     "@azure/msal-react": "^1.0.2",
     "@uifabric/fluent-theme": "^0.16.7",
     "axios": "^0.28.0",
-    "gatsby": "^2.24.60",
+    "gatsby": "^2.32.13",
     "office-ui-fabric-react": "^6.176.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6"
