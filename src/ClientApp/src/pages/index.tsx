@@ -21,7 +21,7 @@ interface IndexStyles {
 }
 
 const mainPageStyles: IndexStyles = {
- loginActionButton: [
+  loginActionButton: [
     'ms-BasicButtonsExample',
     {
       selectors: {
@@ -36,39 +36,67 @@ const mainPageStyles: IndexStyles = {
 const getClassNames = classNamesFunction<IndexStyleProps, IndexStyles>();
 const classNames = getClassNames(mainPageStyles, {});
 
-export class LoginActionButton extends React.Component<IButtonProps> {
+export class LoginActionButton extends React.Component<IButtonProps, { isLoggedIn: boolean, username: string }> {
+  constructor(props: IButtonProps) {
+    super(props);
+    this.state = { isLoggedIn: false, username: "" }; // Add isLoggedIn to the state
+  }
+
+  async componentDidMount() {
+    const isLoggedIn = await auth.isLoggedIn(); // Fetch login status asynchronously
+    this.setState({ isLoggedIn });
+
+    if (isLoggedIn) {
+      const username = await auth.getUserName(); // Fetch the username if logged in
+      this.setState({ username });
+    }
+  }
+
+  handleLogout = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    event.preventDefault();
+    await auth.logout(); // Wait for the logout operation to complete
+    this.setState({ isLoggedIn: false, username: "" }); // Reset state after logout
+  }
+
+  handleLogin = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    event.preventDefault();
+    await auth.login(); // Wait for the login operation to complete
+    const isLoggedIn = await auth.isLoggedIn(); // Check login status after login
+    if (isLoggedIn) {
+      const username = await auth.getUserName(); // Fetch the username after login
+      this.setState({ isLoggedIn, username });
+    }
+  }
+
   public render(): JSX.Element {
     const { disabled, checked } = this.props;
+    const { isLoggedIn, username } = this.state;
 
     return (
       <div className={css(classNames.loginActionButton)}>
-          {auth.isLoggedIn() ? (
-            <ActionButton
+        {isLoggedIn ? (
+          <ActionButton
             data-automation-id="test"
             iconProps={{ iconName: 'AddFriend' }}
             allowDisabledFocus={true}
             disabled={disabled}
             checked={checked}
-            onClick={event => {
-              event.preventDefault()
-              auth.logout()
-              }}>
-              Sign out ({auth.getUserName()})
-            </ActionButton>
-          ) : (
-            <ActionButton
+            onClick={this.handleLogout} // Handle logout asynchronously
+          >
+            Sign out ({username})
+          </ActionButton>
+        ) : (
+          <ActionButton
             data-automation-id="test"
             iconProps={{ iconName: 'AddFriend' }}
             allowDisabledFocus={true}
             disabled={disabled}
             checked={checked}
-            onClick={event => {
-              event.preventDefault()
-              auth.login()
-              }}>
-              Sign in
-            </ActionButton>
-          )}
+            onClick={this.handleLogin} // Handle login asynchronously
+          >
+            Sign in
+          </ActionButton>
+        )}
       </div>
     );
   }
@@ -77,21 +105,21 @@ export class LoginActionButton extends React.Component<IButtonProps> {
 export class RestrictedContent extends React.Component {
   public render(): JSX.Element {
     return (
-        <div>
-          {auth.isLoggedIn() ? (
-            <>
-              <DroneStatusDetailsList />
-            </>
-          ): (
-            <>
-              You should <Link onClick={e => {
+      <div>
+        {auth.isLoggedIn() ? (
+          <>
+            <DroneStatusDetailsList />
+          </>
+        ) : (
+          <>
+            You should <Link onClick={e => {
               e.preventDefault()
               auth.login()
-              }}>Sign in</Link> to see restricted
-              content!
-            </>
-          )}
-        </div>
+            }}>Sign in</Link> to see restricted
+            content!
+          </>
+        )}
+      </div>
     );
   }
 }
@@ -123,7 +151,7 @@ const App: React.FunctionComponent = () => {
       </Stack.Item>
       <Stack.Item align="start">
         <Text styles={descStyle}>
-        This sample demonstrates how to authenticate a serverless API.
+          This sample demonstrates how to authenticate a serverless API.
         </Text>
       </Stack.Item>
       <Stack.Item align="start">
