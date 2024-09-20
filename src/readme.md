@@ -97,7 +97,7 @@ export DRONE_STATUS_FUNCTION_APP_NAME=$(az deployment group show \
 
 # Deploy the function to the function app
 cd DroneStatus/dotnet/DroneStatusFunctionApp/
-func azure functionapp publish ${DRONE_STATUS_FUNCTION_APP_NAME}
+func azure functionapp publish ${DRONE_STATUS_FUNCTION_APP_NAME} --dotnet-isolated
 cd ../../..
 ```
 
@@ -113,7 +113,7 @@ export DRONE_TELEMETRY_FUNCTION_APP_NAME=$(az deployment group show \
 
 # Deploy the function to the function app
 cd ./DroneTelemetry/DroneTelemetryFunctionApp/
-func azure functionapp publish ${DRONE_TELEMETRY_FUNCTION_APP_NAME}
+func azure functionapp publish ${DRONE_TELEMETRY_FUNCTION_APP_NAME} --dotnet-isolated
 cd ./../..
 ```
 
@@ -264,7 +264,9 @@ az resource create --id $API_POLICY_ID \
         \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"${ISSUER_URL}.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"
 ```
-## Open app 
+
+## Open app
+
 Execute the url `$CLIENT_URL` in your browser
 
 ## (Optional) Deploy v2 of GetStatus API
