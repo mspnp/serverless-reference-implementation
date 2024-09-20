@@ -200,7 +200,7 @@ az cdn endpoint update \
    -g $RESOURCEGROUP \
    --profile-name $CDN_NAME \
    -n $CDN_NAME \
-   --set probePath="/semver.txt"
+   --probe-path "/semver.txt"
 ```
 
 ## Update the reply URL for the registered application
