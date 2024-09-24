@@ -43,6 +43,16 @@ var sendEventSourceKeyName = 'send'
 var listenEventSourceKeyName = 'listen'
 var eventSourceKeyName = 'allinone'
 
+var eventHubsDataReceiverRole = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  'a638d3c7-ab3a-418d-83e6-5f17a39d4fde'
+) // Event Hubs Data Receiver
+
+var eventHubsDataOwnerRole = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  'f526a384-b230-433a-b45c-95f59c4a2dec'
+) // Event Hubs Data Owner
+
 resource droneStatusStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: droneStatusStorageAccountName
   location: location
@@ -175,6 +185,28 @@ resource cosmosDatabaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15
   }
 }
 
+// Assign Role to allow Read data from cosmos DB
+resource cosmosDBDataReaderRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name:guid(resourceGroup().id, cosmosDatabaseAccount.id, 'cosmosDBDataReaderRole')
+  parent: cosmosDatabaseAccount
+  properties:{
+    principalId:  droneStatusFunctionApp.identity.principalId
+    roleDefinitionId: '/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosDatabaseAccount.name}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000001'
+    scope: cosmosDatabaseAccount.id
+  }
+}
+
+// Assign Role to allow Write data from cosmos DB
+resource cosmosDBDataContributorRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(resourceGroup().id, cosmosDatabaseAccount.id, 'cosmosDBDataContributorRole')
+  parent: cosmosDatabaseAccount
+  properties:{
+    principalId:  droneTelemetryFunctionApp.identity.principalId
+    roleDefinitionId: '/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosDatabaseAccount.name}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    scope: cosmosDatabaseAccount.id
+  }
+}
+
 resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: droneStatusFunctionAppName
   location: location
@@ -182,6 +214,9 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
     displayName: 'Drone Status Function App'
   }
   kind: 'functionapp'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     enabled: true
     serverFarmId: appServicePlan.id
@@ -219,16 +254,8 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: droneStatusAppInsights.properties.InstrumentationKey
         }
         {
-          name: 'COSMOSDB_CONNECTION_STRING'
-          value: 'AccountEndpoint=${cosmosDatabaseAccount.properties.documentEndpoint};AccountKey=${listKeys(cosmosDatabaseAccount.id,'2015-04-08').primaryMasterKey};'
-        }
-        {
-          name: 'CosmosDBEndpoint'
+          name: 'COSMOSDB_CONNECTION_STRING__accountEndpoint'
           value: cosmosDatabaseAccount.properties.documentEndpoint
-        }
-        {
-          name: 'CosmosDBKey'
-          value: listKeys(cosmosDatabaseAccount.id, '2015-04-08').primaryMasterKey
         }
         {
           name: 'COSMOSDB_DATABASE_NAME'
@@ -326,6 +353,27 @@ resource eventHubNamespace 'Microsoft.EventHub/namespaces@2022-10-01-preview' = 
   }
 }
 
+// Assign Role receive messages from Event Hub
+resource eventHubsDataReceiverRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, eventHubNamespace.id, 'eventHubsDataReceiverRole')
+  scope: eventHubNamespace
+  properties: {
+    roleDefinitionId: eventHubsDataReceiverRole
+    principalId: droneTelemetryFunctionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource eventHubsDataReceiverOwnerAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, eventHubNamespace.id, 'eventHubsDataOwnerRole')
+  scope: eventHubNamespace
+  properties: {
+    roleDefinitionId: eventHubsDataOwnerRole
+    principalId: droneTelemetryFunctionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: droneTelemetryFunctionAppName
   location: location
@@ -333,6 +381,9 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
     displayName: 'Drone Telemetry Function App'
   }
   kind: 'functionapp'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     enabled: true
     serverFarmId: appServicePlan.id
@@ -370,16 +421,8 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: droneTelemetryAppInsights.properties.InstrumentationKey
         }
         {
-          name: 'COSMOSDB_CONNECTION_STRING'
-          value: 'AccountEndpoint=${cosmosDatabaseAccount.properties.documentEndpoint};AccountKey=${listKeys(cosmosDatabaseAccount.id,'2015-04-08').primaryMasterKey};'
-        }
-        {
-          name: 'CosmosDBEndpoint'
+          name: 'COSMOSDB_CONNECTION_STRING__accountEndpoint'
           value: cosmosDatabaseAccount.properties.documentEndpoint
-        }
-        {
-          name: 'CosmosDBKey'
-          value: listKeys(cosmosDatabaseAccount.id, '2015-04-08').primaryMasterKey
         }
         {
           name: 'COSMOSDB_DATABASE_NAME'
