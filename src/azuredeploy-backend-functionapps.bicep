@@ -40,7 +40,6 @@ var droneTelemetryAppInsightsName = '${appName}${uniqueString(resourceGroup().id
 var cosmosDatabaseAccountName = toLower('${appName}${uniqueString(resourceGroup().id)}')
 var eventHubNameSpaceName = '${appName}${uniqueString(resourceGroup().id)}-ns'
 var eventHubName = '${appName}-eh'
-var eventHubId = 'Microsoft.EventHub/namespaces/${eventHubNameSpaceName}/EventHubs/${eventHubName}'
 var eventHubConsumerGroupName = 'dronetelemetry'
 var sendEventSourceKeyName = 'send'
 var listenEventSourceKeyName = 'listen'
@@ -460,8 +459,8 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: cosmosDatabaseCollection
         }
         {
-          name: 'EventHubConnection'
-          value: listKeys('${eventHubId}/authorizationRules/listen/', '2017-04-01').primaryConnectionString
+          name: 'EventHubConnection__fullyQualifiedNamespace'
+          value: '${eventHubNamespace.name}.servicebus.windows.net'
         }
         {
           name: 'EventHubConsumerGroup'

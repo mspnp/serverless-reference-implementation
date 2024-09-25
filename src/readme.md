@@ -151,13 +151,8 @@ export EH_NAMESPACE=$(az eventhubs namespace list \
      -g $RESOURCEGROUP \
      --query '[].name' --output tsv)
 
-# list the send keys
-export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule keys list \
-     -g $RESOURCEGROUP \
-     --eventhub-name $APPNAME-eh  \
-     --namespace-name $EH_NAMESPACE \
-     --name send \
-     --query primaryConnectionString --output tsv)
+export FUllY_QUALIFIED_NAMESPACE="${EH_NAMESPACE}.servicebus.windows.net"
+export EVENT_HUB_NAME=$APPNAME-eh
 
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 
