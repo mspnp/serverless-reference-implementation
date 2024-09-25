@@ -487,8 +487,49 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   }
   dependsOn: [
     droneTelemetryStorageAccount
-    eventHubNamespace
   ]
+}
+
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
+  name: 'law-${appName}'
+  location: location
+  properties: any({
+    retentionInDays: 30
+    features: {
+      searchVersion: 1
+    }
+    sku: {
+      name: 'PerGB2018'
+    }
+  })
+}
+
+resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: '${eventHubNamespace.name}-diagnostic'
+  scope: eventHubNamespace
+  properties: {
+    logs: [
+      {
+        category: 'OperationalLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    workspaceId: logAnalytics.id
+  }
 }
 
 output cosmosDatabaseAccount string = cosmosDatabaseAccountName
