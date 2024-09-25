@@ -23,6 +23,9 @@ param cosmosDatabaseCollection string
 @description('The resources location.')
 param location string = resourceGroup().location
 
+@description('It will be used to assign roles to the user, allowing them to access resources.')
+param userObjectId string
+
 var droneStatusStorageAccountName = toLower('${appName}ds${uniqueString(resourceGroup().id)}')
 var droneTelemetryStorageAccountName = toLower('${appName}dt${uniqueString(resourceGroup().id)}')
 var droneTelemetryDeadLetterStorageQueueAccountName = toLower('${appName}dtq${uniqueString(resourceGroup().id)}')
@@ -176,6 +179,8 @@ resource cosmosDatabaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15
   kind: 'GlobalDocumentDB'
   properties: {
     databaseAccountOfferType: 'Standard'
+    // Enforcing role-based access control as the only authentication method
+    disableLocalAuth: true
     locations:[
       {
         locationName: location
@@ -202,6 +207,28 @@ resource cosmosDBDataContributorRoleAssignment 'Microsoft.DocumentDB/databaseAcc
   parent: cosmosDatabaseAccount
   properties:{
     principalId:  droneTelemetryFunctionApp.identity.principalId
+    roleDefinitionId: '/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosDatabaseAccount.name}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    scope: cosmosDatabaseAccount.id
+  }
+}
+
+// Assign Role to allow Read data from cosmos DB
+resource cosmosDBDataReaderRoleAssignmentUser 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name:guid(resourceGroup().id, cosmosDatabaseAccount.id, 'cosmosDBDataReaderRoleUser')
+  parent: cosmosDatabaseAccount
+  properties:{
+    principalId:  userObjectId
+    roleDefinitionId: '/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosDatabaseAccount.name}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000001'
+    scope: cosmosDatabaseAccount.id
+  }
+}
+
+// Assign Role to allow Write data from cosmos DB
+resource cosmosDBDataContributorRoleAssignmentUser 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(resourceGroup().id, cosmosDatabaseAccount.id, 'cosmosDBDataContributorRoleUser')
+  parent: cosmosDatabaseAccount
+  properties:{
+    principalId:  userObjectId
     roleDefinitionId: '/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosDatabaseAccount.name}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
     scope: cosmosDatabaseAccount.id
   }
