@@ -80,20 +80,20 @@ export CDN_ENDPOINT_HOST=$(az cdn endpoint create --location $LOCATION --resourc
 --query hostName --output tsv)
 
 # Configure custom caching rules
-az cdn endpoint update \
-   -g $RESOURCEGROUP \
-   --profile-name $CDN_NAME \
-   -n $CDN_NAME \
-   --set deliveryPolicy.description="" \
-   --set deliveryPolicy.rules='[{"name": "CacheExpiration", "actions": [{"name": "CacheExpiration","parameters": {"cacheType":"All","cacheBehavior": "Override","cacheDuration": "366.00:00:00"}}],"conditions": [{"name": "UrlFileExtension","parameters": {"operator":"EndsWith","matchValues": ["js","css","map"],"transforms": ["Lowercase"] }}],"order": 1}]'
-
+az cdn endpoint rule add  \
+   -g $RESOURCEGROUP  \
+   --profile-name $CDN_NAME  \
+   -n $CDN_NAME --order 1 --rule-name "CacheExpiration"  \
+   --match-variable UrlFileExtension --operator EndsWith --match-values ["js","css","map"]  \
+   --action-name "CacheExpiration" --transform Lowercase  \
+   --cache-behavior  "Override" --cache-duration "366.00:00:00"
 
 export CLIENT_URL="https://$CDN_ENDPOINT_HOST"
 ```
 
 ## Clone and add remote
 
-```
+```bash
 export GITHUB_USER=<github-username>
 # the following repository must be created in GitHub beforehand under your repositories
 export NEW_REMOTE_URL=https://github.com/${GITHUB_USER}/serverless-reference-implementation.git
@@ -200,7 +200,7 @@ az cdn endpoint update \
    -g $RESOURCEGROUP \
    --profile-name $CDN_NAME \
    -n $CDN_NAME \
-   --set probePath="/semver.txt"
+   --probe-path "/semver.txt"
 ```
 
 ## Update the reply URL for the registered application

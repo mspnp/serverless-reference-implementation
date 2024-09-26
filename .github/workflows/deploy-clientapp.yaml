@@ -73,7 +73,7 @@ jobs:
         run: |
           cd src/ClientApp
           npm install
-          node --openssl-legacy-provider node_modules/.bin/gatsby build
+          npm run build
       - name: Enable compression at origin level
         run: |
           cd src/ClientApp/public

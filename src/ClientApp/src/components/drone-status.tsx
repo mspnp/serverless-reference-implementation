@@ -110,7 +110,7 @@ export class DroneStatusDetailsList extends React.Component<
       axios
         .get(this.getApiResourceUrl(id), {
           headers: {
-            Authorization: "Bearer " + token.accessToken,
+            Authorization: "Bearer " + token,
             Accept: "application/json",
           },
         })
