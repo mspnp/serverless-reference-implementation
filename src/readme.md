@@ -137,7 +137,7 @@ export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${D
 # This takes more than 1hs to execute
 az deployment group create \
    -g ${RESOURCEGROUP} \
-   --template-file azuredeploy-apim.json \
+   --template-file azuredeploy-apim.bicep \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}
