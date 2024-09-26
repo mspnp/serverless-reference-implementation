@@ -8,18 +8,12 @@ using Newtonsoft.Json;
 
 namespace DroneTelemetryFunctionApp
 {
-    public class RawTelemetryFunction
+    public class RawTelemetryFunction(ILogger<RawTelemetryFunction> logger, ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient, CosmosClient cosmosClient)
     {
-        private readonly ILogger<RawTelemetryFunction> _logger;
-        private readonly ITelemetryProcessor _telemetryProcessor;
-        private readonly TelemetryClient _telemetryClient;
-
-        public RawTelemetryFunction(ILogger<RawTelemetryFunction> logger, ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient)
-        {
-            _logger = logger;
-            _telemetryProcessor = telemetryProcessor;
-            _telemetryClient = telemetryClient;
-        }
+        private readonly ILogger<RawTelemetryFunction> _logger = logger;
+        private readonly ITelemetryProcessor _telemetryProcessor = telemetryProcessor;
+        private readonly TelemetryClient _telemetryClient = telemetryClient;
+        private readonly CosmosClient _cosmosClient = cosmosClient;
 
         [Function(nameof(RawTelemetryFunction))]
         public async Task RunAsync([EventHubTrigger("%EventHubName%", Connection = "EventHubConnection")] EventData[] messages,
@@ -27,9 +21,7 @@ namespace DroneTelemetryFunctionApp
         {
             _telemetryClient.GetMetric("EventHubMessageBatchSize").TrackValue(messages.Length);
             DeviceState? deviceState = null;
-            // Create a new CosmosClient
-            var cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING"));
-
+          
             // Get a reference to the database and the container
             var database = cosmosClient.GetDatabase(Environment.GetEnvironmentVariable("COSMOSDB_DATABASE_NAME"));
             var container = database.GetContainer(Environment.GetEnvironmentVariable("COSMOSDB_DATABASE_COL"));
@@ -50,7 +42,7 @@ namespace DroneTelemetryFunctionApp
                     }
                     catch (Exception ex)
                     {
-                         _logger.LogError(ex, "Error saving on database", message.PartitionKey, message.SequenceNumber);
+                        _logger.LogError(ex, "Error saving on database", message.PartitionKey, message.SequenceNumber);
                         var deadLetterMessage = new DeadLetterMessage { Issue = ex.Message, MessageBody = message.Body.ToArray(), DeviceState = deviceState };
                         // Convert the dead letter message to a string
                         var deadLetterMessageString = JsonConvert.SerializeObject(deadLetterMessage);

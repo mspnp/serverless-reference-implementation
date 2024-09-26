@@ -1,0 +1,14 @@
+﻿{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "COSMOSDB_CONNECTION_STRING__accountEndpoint": "your value",
+    "COSMOSDB_DATABASE_COL": "your value",
+    "COSMOSDB_DATABASE_NAME": "your value",
+    "DeadLetterStorage": "your value",
+    "EventHubConnection__fullyQualifiedNamespace": "{your namespace}.servicebus.windows.net",
+    "EventHubConsumerGroup": "your value",
+    "EventHubName": "your value"
+  }
+}

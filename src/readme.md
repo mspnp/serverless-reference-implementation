@@ -55,7 +55,8 @@ az deployment group create \
    --parameters appName=${APPNAME} \
    appInsightsLocation=${APP_INSIGHTS_LOCATION} \
    cosmosDatabaseName=${COSMOSDB_DATABASE_NAME} \
-   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
+   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}  \
+   userObjectId=$(az ad signed-in-user show --query id --output tsv)
 ```
 
 Create Cosmos DB database and collection. This resource is one of the most expensive, in order to take care the cost in the current reference implementation the container has throughput set to autoscale with a maximum 5000 throughput unites, this would be enough for the current example. In production, the configuration need to be appropriate to process the telemetry. 
@@ -150,13 +151,8 @@ export EH_NAMESPACE=$(az eventhubs namespace list \
      -g $RESOURCEGROUP \
      --query '[].name' --output tsv)
 
-# list the send keys
-export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule keys list \
-     -g $RESOURCEGROUP \
-     --eventhub-name $APPNAME-eh  \
-     --namespace-name $EH_NAMESPACE \
-     --name send \
-     --query primaryConnectionString --output tsv)
+export FUllY_QUALIFIED_NAMESPACE="${EH_NAMESPACE}.servicebus.windows.net"
+export EVENT_HUB_NAME=$APPNAME-eh
 
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 
