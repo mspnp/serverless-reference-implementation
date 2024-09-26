@@ -400,6 +400,17 @@ resource eventHubsDataReceiverOwnerAssignment 'Microsoft.Authorization/roleAssig
   }
 }
 
+// To allow simulator send messages
+resource eventHubsDataOwnerUserObjectIdRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, userObjectId, 'eventHubsDataOwnerRoleUserObjectId')
+  scope: eventHubNamespace
+  properties: {
+    roleDefinitionId: eventHubsDataOwnerRole
+    principalId: userObjectId
+    principalType: 'User' 
+  }
+}
+
 resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: droneTelemetryFunctionAppName
   location: location
