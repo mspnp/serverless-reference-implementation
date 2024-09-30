@@ -161,7 +161,7 @@ dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
 The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select **RawTelemetryFunction**, expand the **Monitor** tab, and click on any of the logs.
-Also, you can see the database, which will be populated by the drone status.
+Also, you can see the database, which will be populated by the drone status. To see the data, in Azure Cosmos DB account -> Networking, you need to add your current IP.
 
 ## Enable authentication in the function app
 

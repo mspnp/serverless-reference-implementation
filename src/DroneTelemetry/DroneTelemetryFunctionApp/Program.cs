@@ -6,6 +6,7 @@ using Serverless.Serialization;
 using DroneTelemetryFunctionApp;
 using Microsoft.Azure.Cosmos;
 using Azure.Identity;
+using Microsoft.Extensions.Azure;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -23,7 +24,13 @@ var host = new HostBuilder()
                new DefaultAzureCredential()
            );
         });
-
+        var deadLetterStorageName = Environment.GetEnvironmentVariable("DeadLetterStorageName");
+        services.AddAzureClients(clientBuilder =>
+        {
+            clientBuilder.AddQueueServiceClient(
+                new Uri($"https://{deadLetterStorageName}.queue.core.windows.net"));
+            clientBuilder.UseCredential(new DefaultAzureCredential());
+        });
     })
     .Build();
 
