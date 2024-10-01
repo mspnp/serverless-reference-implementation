@@ -504,7 +504,7 @@ resource droneTelemetryFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
   name: 'law-${appName}'
   location: location
-  properties: any({
+  properties: {
     retentionInDays: 30
     features: {
       searchVersion: 1
@@ -512,7 +512,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-previ
     sku: {
       name: 'PerGB2018'
     }
-  })
+  }
 }
 
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
