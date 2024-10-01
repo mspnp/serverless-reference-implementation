@@ -116,11 +116,11 @@ jobs:
         with:
           inlineScript: |
             Folder=$(echo ${{ steps.gitversion.outputs.fullSemVer }} | sed  's/+//g')
-            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.html" --content-type "text/html" 
-            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.js" --content-type "application/javascript"
-            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.js.map" --content-type "application/octet-stream"
-            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.json" --content-type "application/json"
-            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --pattern "*.txt" --content-type "text/plain"
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.html" --content-type "text/html" --auth-mode login
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.js" --content-type "application/javascript" --auth-mode login
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.js.map" --content-type "application/octet-stream" --auth-mode login
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --content-encoding br --pattern "*.json" --content-type "application/json" --auth-mode login
+            az storage blob upload-batch -s "./src/ClientApp/public" --destination "\$web\\$Folder" --account-name ${{ github.event.inputs.azureStorageAccountName }} --pattern "*.txt" --content-type "text/plain" --auth-mode login
             # target new version
             az cdn endpoint update --resource-group ${{ github.event.inputs.resourceGroupName }} --profile-name ${{ github.event.inputs.azureCdnName }} --name ${{ github.event.inputs.azureCdnName }} --origin-path /$Folder
             AZURE_CDN_ENDPOINT_HOSTNAME=$(az cdn endpoint show --resource-group ${{ github.event.inputs.resourceGroupName }} --name ${{ github.event.inputs.azureCdnName }} --profile-name ${{ github.event.inputs.azureCdnName }} --query hostName -o tsv)
