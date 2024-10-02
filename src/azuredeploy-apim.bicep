@@ -39,12 +39,18 @@ param functionAppCodeV2 string = ''
 param requireSubscription bool = false
 
 var apiManagementServiceName = '${resourceGroup().name}-apim-${uniqueString(resourceGroup().id)}'
+var keyVaultName = 'kv-${uniqueString(resourceGroup().id)}'
 var functionAppResourceIdV1 = resourceId('Microsoft.Web/sites', functionAppNameV1)
 var functionAppResourceIdV2 = (empty(functionAppNameV2) ? '' : resourceId('Microsoft.Web/sites', functionAppNameV2))
 var xmlJsonEscapedPolicyV1 = '<policies>\r\n    <inbound>\r\n        <base />\r\n        <rewrite-uri template="GetStatusFunction?deviceId={deviceid}" />\r\n        <set-backend-service id="apim-generated-policy" backend-id="dronestatusdotnet" />\r\n   </inbound>\r\n    <backend>\r\n        <forward-request />\r\n</backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>'
 var xmlJsonEscapedPolicyV2 = '<policies>\r\n    <inbound>\r\n        <base />\r\n        <rewrite-uri template="GetStatusFunction?deviceId={deviceid}" />\r\n        <set-backend-service id="apim-generated-policy-v2" backend-id="dronestatusnodejs" />\r\n   </inbound>\r\n    <backend>\r\n        <forward-request />\r\n</backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>'
 var versionSetName = 'dronestatusversionset'
 var deployV2 = (empty(functionAppUrlV2) ? 'No' : 'Yes')
+
+var keyVaultSecretsUserRole = subscriptionResourceId(
+  'Microsoft.Authorization/roleDefinitions',
+  '4633458b-17de-408a-b874-0445c86b69e6'
+) // Key Vault Secrets User
 
 resource apiManagementService 'Microsoft.ApiManagement/service@2023-09-01-preview' = {
   name: apiManagementServiceName
@@ -54,12 +60,62 @@ resource apiManagementService 'Microsoft.ApiManagement/service@2023-09-01-previe
     name: sku
     capacity: skuCount
   }
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     publisherEmail: publisherEmail
     publisherName: publisherName
     apiVersionConstraint: {
       minApiVersion: '2019-12-01'
     }
+  }
+}
+
+// Key Vault resource with RBAC and network ACLs
+resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
+  name: keyVaultName
+  location: location
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true // Enforce RBAC
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny' // Deny by default
+    }
+  }
+}
+
+// Key Vault Secret
+resource keyVaultSecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  name: 'getstatusfunctionapp-code'
+  parent: keyVault
+  properties: {
+    value: functionAppCodeV1
+  }
+}
+
+// Key Vault Secret
+resource keyVaultSecretV2 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  name: 'getstatusv2functionapp-code'
+  parent: keyVault
+  properties: {
+    value: functionAppCodeV2
+  }
+}
+
+// Role Assignment: Grant API Management access to Key Vault via RBAC
+resource keyVaultSecretsUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(apiManagementService.id, keyVault.id, keyVaultSecretsUserRole)
+  scope: keyVault
+  properties: {
+    roleDefinitionId: keyVaultSecretsUserRole
+    principalId: apiManagementService.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
@@ -74,23 +130,33 @@ resource apiManagementServiceNameNamedValueFunctionAppCodeV1 'Microsoft.ApiManag
       'code'
     ]
     secret: true
-    value: functionAppCodeV1
+    keyVault: {
+      secretIdentifier: '${keyVault.properties.vaultUri}secrets/${keyVaultSecret.name}' // Reference to the Key Vault secret
+    }
   }
+  dependsOn:[
+    keyVaultSecretsUserRoleAssignment
+  ]
 }
 
 resource apiManagementServiceNameNamedValueFunctionAppCodeV2 'Microsoft.ApiManagement/service/namedValues@2023-09-01-preview' = if (deployV2 == 'Yes') {
   parent: apiManagementService
   name: 'getstatusv2functionapp-code'
   properties: {
+    displayName: 'getstatusv2functionapp-code'
     tags: [
       'key'
       'function'
       'code'
     ]
     secret: true
-    displayName: 'getstatusv2functionapp-code'
-    value: functionAppCodeV2
+    keyVault: {
+      secretIdentifier: '${keyVault.properties.vaultUri}secrets/${keyVaultSecretV2.name}' // Reference to the Key Vault secret
+    }
   }
+  dependsOn:[
+    keyVaultSecretsUserRoleAssignment
+  ]
 }
 
 resource apiManagementServiceNameDronestatusdotnet 'Microsoft.ApiManagement/service/backends@2023-09-01-preview' = {
@@ -108,7 +174,7 @@ resource apiManagementServiceNameDronestatusdotnet 'Microsoft.ApiManagement/serv
     url: functionAppUrlV1
     protocol: 'http'
   }
-  dependsOn:[
+  dependsOn: [
     apiManagementServiceNameNamedValueFunctionAppCodeV1
   ]
 }
