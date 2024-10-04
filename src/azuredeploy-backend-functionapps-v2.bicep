@@ -37,9 +37,13 @@ resource droneStatusStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01
   tags: {
     displayName: 'Drone Status Function App'
   }
-  kind: 'Storage'
+  kind: 'StorageV2'
   properties: {
+    accessTier: 'Hot'
     supportsHttpsTrafficOnly: true
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: true
     encryption: {
       services: {
         blob: {
@@ -77,22 +81,8 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   properties: { }
 }
 
-resource cosmosDatabaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15-preview' = {
+resource cosmosDatabaseAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15-preview' existing = {
   name: cosmosDatabaseAccountName
-  location: location
-  tags: {
-    displayName: 'cosmosDB'
-  }
-  kind: 'GlobalDocumentDB'
-  properties: {
-    databaseAccountOfferType: 'Standard'
-    locations:[
-      {
-        locationName: location
-        failoverPriority: 0
-      }
-    ]
-  }
 }
 
 resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
@@ -102,6 +92,9 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
     displayName: 'Drone Status Function App'
   }
   kind: 'functionapp'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: hostingPlan.id
     siteConfig: {
@@ -135,16 +128,8 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: droneStatusAppInsights.properties.InstrumentationKey
         }
         {
-          name: 'COSMOSDB_CONNECTION_STRING'
-          value: 'AccountEndpoint=${cosmosDatabaseAccount.properties.documentEndpoint};AccountKey=${listKeys(cosmosDatabaseAccount.id,'2015-04-08').primaryMasterKey};'
-        }
-        {
           name: 'CosmosDBEndpoint'
           value: cosmosDatabaseAccount.properties.documentEndpoint
-        }
-        {
-          name: 'CosmosDBKey'
-          value: listKeys(cosmosDatabaseAccount.id, '2015-04-08').primaryMasterKey
         }
         {
           name: 'COSMOSDB_DATABASE_NAME'
@@ -168,4 +153,15 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   dependsOn: [
     droneStatusStorageAccount
   ]
+}
+
+// Assign Role to allow Read data from cosmos DB
+resource cosmosDBDataReaderRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(resourceGroup().id, cosmosDatabaseAccount.id, 'cosmosDBDataReaderRoleV2')
+  parent: cosmosDatabaseAccount
+  properties: {
+    principalId: droneStatusFunctionApp.identity.principalId
+    roleDefinitionId: '/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosDatabaseAccount.name}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000001'
+    scope: cosmosDatabaseAccount.id
+  }
 }

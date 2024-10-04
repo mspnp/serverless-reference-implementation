@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, input, InvocationContext } from '@azure/functions';
+import { DefaultAzureCredential } from '@azure/identity';
 const CosmosClient = require('@azure/cosmos').CosmosClient
 
 interface IDroneStatus {
@@ -14,7 +15,8 @@ interface IDroneStatus {
 }
 
 async function getDroneStatusFromCosmosDB(deviceId: string): Promise<IDroneStatus> {
-    const client = new CosmosClient({ endpoint: process.env.CosmosDBEndpoint, key: process.env.CosmosDBKey });
+    const credential = new DefaultAzureCredential();
+    const client = new CosmosClient({ endpoint: process.env.CosmosDBEndpoint, aadCredentials: credential });
     const dbResponse = await client.databases.createIfNotExists({
         id: process.env.COSMOSDB_DATABASE_NAME
     });
@@ -63,7 +65,7 @@ export async function GetStatusFunction(request: HttpRequest, context: Invocatio
             };
           }, context));   
           return result;    
-};
+        };
 
 app.http('GetStatusFunction', {
     route: "getstatusfunction",

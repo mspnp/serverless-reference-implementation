@@ -49,6 +49,7 @@ Compile the new API version
 
 ```bash
 cd DroneStatus/nodejs
+npm run build
 func azure functionapp publish ${APPNAME}-dsv2-funcapp --typescript
 cd  ./../../
 
@@ -101,7 +102,7 @@ export FUNCTIONAPP_KEY_V2=<function-key-from-the-previous-step>
 
 az deployment group create \
    -g ${RESOURCEGROUP} \
-   --template-file azuredeploy-apim.json \
+   --template-file azuredeploy-apim.bicep \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}  \
