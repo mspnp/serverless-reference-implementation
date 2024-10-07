@@ -1,6 +1,7 @@
 'use strict';
 
 const clientPrincipalHeaderKey = 'X-MS-CLIENT-PRINCIPAL';
+//https://learn.microsoft.com/azure/app-service/configure-authentication-user-identities#decoding-the-client-principal-header
 
 function handleIfAuthorizedForRoles(req, roles, handler, logger) {
     return handleIfAuthorizedByClaims(req, claims => {
@@ -41,7 +42,7 @@ function getResultIfUnauthorized(req, authorizeClaims, logger) {
       } }
     }
 
-    return authorizeClaims(claims, logger) ? null : { status: 401, body: 'Unauthorized'  ,
+    return authorizeClaims(claims) ? null : { status: 401, body: 'Unauthorized'  ,
     headers: {
       'Content-Type': 'text/plain'
     }};

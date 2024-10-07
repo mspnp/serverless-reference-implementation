@@ -134,7 +134,7 @@ export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
 
 export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
 
-# This takes more than 1hs to execute
+# This process takes more than one hour to complete. If an error occurs due to propagation time, running the script again should resolve the issue.
 az deployment group create \
    -g ${RESOURCEGROUP} \
    --template-file azuredeploy-apim.bicep \
