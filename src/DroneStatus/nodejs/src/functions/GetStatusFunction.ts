@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, input, InvocationContext } from '@azure/functions';
 import { DefaultAzureCredential } from '@azure/identity';
+import { json } from 'stream/consumers';
 const CosmosClient = require('@azure/cosmos').CosmosClient
 
 interface IDroneStatus {
@@ -32,8 +33,6 @@ async function getDroneStatusFromCosmosDB(deviceId: string): Promise<IDroneStatu
 
 export async function GetStatusFunction(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
         const authUtils = require('./authorization');
-        context.log('Processing getStatus request.');
-
         const deviceId = request.query.get('deviceId');
         if (!deviceId) {
             context.log('Missing deviceId');

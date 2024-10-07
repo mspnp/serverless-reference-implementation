@@ -21,7 +21,7 @@ function handleIfAuthorizedByClaims(req, authorizeClaims, handler, logger) {
 };
 
 function getResultIfUnauthorized(req, authorizeClaims, logger) {
-    const principal = req.headers[clientPrincipalHeaderKey.toLocaleLowerCase()];
+    const principal = req.headers.get(clientPrincipalHeaderKey.toLocaleLowerCase());
     if (!principal) {
         logger.error('The request does not contain the required header %s', clientPrincipalHeaderKey);
         return { status: 401, body: 'Unauthorized',
