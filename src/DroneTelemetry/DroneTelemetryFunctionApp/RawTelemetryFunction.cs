@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Azure.Messaging.EventHubs;
 using Azure.Storage.Queues;
 using Microsoft.ApplicationInsights;
@@ -8,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace DroneTelemetryFunctionApp
 {
-    public class RawTelemetryFunction(ILogger<RawTelemetryFunction> logger, ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient, CosmosClient cosmosClient)
+    public class RawTelemetryFunction(ILogger<RawTelemetryFunction> logger, ITelemetryProcessor telemetryProcessor, TelemetryClient telemetryClient, CosmosClient cosmosClient, QueueServiceClient queueServiceClient)
     {
         private readonly ILogger<RawTelemetryFunction> _logger = logger;
         private readonly ITelemetryProcessor _telemetryProcessor = telemetryProcessor;
@@ -27,7 +28,7 @@ namespace DroneTelemetryFunctionApp
             var container = database.GetContainer(Environment.GetEnvironmentVariable("COSMOSDB_DATABASE_COL"));
 
             // Create a new QueueClient
-            var queueClient = new QueueClient(Environment.GetEnvironmentVariable("DeadLetterStorage"), "deadletterqueue");
+            var queueClient = queueServiceClient.GetQueueClient("deadletterqueue");
             await queueClient.CreateIfNotExistsAsync();
 
             foreach (var message in messages)

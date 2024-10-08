@@ -10,10 +10,6 @@
     <None Remove="local.settings.temolate.json" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="local.settings.temolate.json" />
-    <Content Include="local.settings.json" />
-  </ItemGroup>
-  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.21.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.CosmosDB" Version="4.8.0" />
@@ -26,6 +22,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.39" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.7.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\TelemetrySerialization\Serverless.Serialization\Serverless.Serialization.csproj" />
