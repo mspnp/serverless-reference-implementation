@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Messaging.EventHubs;
+using Azure.Messaging.EventHubs.Consumer;
+using System.Xml.Linq;
+using Azure.Identity;
 
 namespace Serverless.Simulator
 {
@@ -166,20 +169,21 @@ namespace Serverless.Simulator
 
         }
 
-        private static (string EventHubConnectionString,
+        private static (string fullyQualifiedNamespace, string eventHubName,
             int MillisecondsToRun, int GenerateKeyframeGap, int NumberOfDevices) ParseArguments()
         {
-            var eventHubConnectionString = Environment.GetEnvironmentVariable("EVENT_HUB_CONNECTION_STRING");
+            var fullyQualifiedNamespace = Environment.GetEnvironmentVariable("FUllY_QUALIFIED_NAMESPACE");
+            var eventHubName = Environment.GetEnvironmentVariable("EVENT_HUB_NAME");
             var numberOfMillisecondsToRun = (int.TryParse(Environment.GetEnvironmentVariable("SECONDS_TO_RUN"), out int outputSecondToRun) ? outputSecondToRun : 0) * 1000;
             var generateKeyframeGap = int.TryParse(Environment.GetEnvironmentVariable("GENERATE_KEYFRAME_GAP"), out int genKeyframeGap) ? genKeyframeGap : 100;
             var numberOfDevices = int.TryParse(Environment.GetEnvironmentVariable("NUMBER_OF_DEVICES"), out int numDevices) ? numDevices : 1000;
 
-            if (string.IsNullOrWhiteSpace(eventHubConnectionString))
+            if (string.IsNullOrWhiteSpace(fullyQualifiedNamespace))
             {
-                throw new ArgumentException("eventHubConnectionString must be provided");
+                throw new ArgumentException("fullyQualifiedNamespace must be provided");
             }
 
-            return (eventHubConnectionString, numberOfMillisecondsToRun, generateKeyframeGap, numberOfDevices);
+            return (fullyQualifiedNamespace, eventHubName, numberOfMillisecondsToRun, generateKeyframeGap, numberOfDevices);
         }
 
         // blocking collection that helps to print to console the messages on progress on the generation/send to event hub.
@@ -228,8 +232,8 @@ namespace Serverless.Simulator
         {
             try
             {
-                var (EventHubConnectionString, MillisecondsToRun, GenerateKeyframeGap, NumberOfDevices) = ParseArguments();
-                var eventHubClient = new EventHubProducerClient(EventHubConnectionString);
+                var (fullyQualifiedNamespace, eventHubName, MillisecondsToRun, GenerateKeyframeGap, NumberOfDevices) = ParseArguments();
+                var eventHubClient = new EventHubProducerClient(fullyQualifiedNamespace, eventHubName, new DefaultAzureCredential());
                 cts = MillisecondsToRun == 0 ? new CancellationTokenSource() : new CancellationTokenSource(MillisecondsToRun);
 
                 Console.CancelKeyPress += (s, e) =>
@@ -241,7 +245,7 @@ namespace Serverless.Simulator
 
                 AsyncConsole console = new AsyncConsole(cts.Token);
 
-                var eventHubClientPool = new ObjectPool<EventHubProducerClient>(() => new EventHubProducerClient(EventHubConnectionString), 100);
+                var eventHubClientPool = new ObjectPool<EventHubProducerClient>(() => new EventHubProducerClient(fullyQualifiedNamespace, eventHubName, new DefaultAzureCredential()), 100);
 
                 var tasks = new List<Task>();
                 for (int i = 0; i < NumberOfDevices; i++)

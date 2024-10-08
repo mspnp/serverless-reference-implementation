@@ -56,10 +56,10 @@ az account set --subscription <your-subscription-id>
 export STORAGE_ACCOUNT_NAME=<storage account name>
 
 # Create the storage account
-az storage account create --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --location $LOCATION --kind StorageV2
+az storage account create --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --location $LOCATION --kind StorageV2 --allow-shared-key-access false
 
 # Enable static web site support for the storage account
-az storage blob service-properties update --account-name $STORAGE_ACCOUNT_NAME --static-website --404-document 404.html --index-document index.html
+az storage blob service-properties update --account-name $STORAGE_ACCOUNT_NAME --static-website --404-document 404.html --index-document index.html  --auth-mode login
 
 # Retrieve the static website endpoint
 export WEB_SITE_URL=$(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --query primaryEndpoints.web --output tsv)
@@ -140,6 +140,9 @@ git push newremote master
        ```bash
          # Assign built-in Contributor RBAC role for creating resource groups and performing deployments at the resource group level
          az role assignment create --role contributor --subscription $AZURE_SUBSCRIPTION_ID --assignee-object-id  $GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope $AZURE_RESOURCEGROUP_RESOURCE_ID
+
+         # Assign built-in Contributor RBAC role for adding files to the Blob container
+         az role assignment create  --assignee $GH_ACTION_FEDERATED_IDENTITY_SP_OBJECT_ID --role "Storage Blob Data Contributor" --scope $(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCEGROUP --query id --output tsv)
        ```
 
    1. Add federated credentials
