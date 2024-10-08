@@ -97,6 +97,11 @@ resource droneStatusFunctionApp 'Microsoft.Web/sites@2022-09-01' = {
   }
   properties: {
     serverFarmId: hostingPlan.id
+    httpsOnly: true
+    enabled: true
+    redundancyMode: 'None'
+    publicNetworkAccess: 'Enabled'
+    keyVaultReferenceIdentity: 'SystemAssigned'
     siteConfig: {
       nodeVersion: 'NODE|18-lts'
       netFrameworkVersion: 'v8.0'
