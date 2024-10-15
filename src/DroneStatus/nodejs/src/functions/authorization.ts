@@ -1,6 +1,7 @@
 'use strict';
 
 const clientPrincipalHeaderKey = 'X-MS-CLIENT-PRINCIPAL';
+//https://learn.microsoft.com/azure/app-service/configure-authentication-user-identities#decoding-the-client-principal-header
 
 function handleIfAuthorizedForRoles(req, roles, handler, logger) {
     return handleIfAuthorizedByClaims(req, claims => {
@@ -20,7 +21,7 @@ function handleIfAuthorizedByClaims(req, authorizeClaims, handler, logger) {
 };
 
 function getResultIfUnauthorized(req, authorizeClaims, logger) {
-    const principal = req.headers[clientPrincipalHeaderKey.toLocaleLowerCase()];
+    const principal = req.headers.get(clientPrincipalHeaderKey.toLocaleLowerCase());
     if (!principal) {
         logger.error('The request does not contain the required header %s', clientPrincipalHeaderKey);
         return { status: 401, body: 'Unauthorized',
@@ -41,7 +42,7 @@ function getResultIfUnauthorized(req, authorizeClaims, logger) {
       } }
     }
 
-    return authorizeClaims(claims, logger) ? null : { status: 401, body: 'Unauthorized'  ,
+    return authorizeClaims(claims) ? null : { status: 401, body: 'Unauthorized'  ,
     headers: {
       'Content-Type': 'text/plain'
     }};

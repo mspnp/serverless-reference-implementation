@@ -25,6 +25,10 @@ param functionAppNameV1 string
 @secure()
 param functionAppCodeV1 string
 
+@description('The name for the function app. It must only contain characters and numbers, and be 6 chars long max.')
+@maxLength(6)
+param appName string
+
 @description('Function app url V2')
 param functionAppUrlV2 string = ''
 
@@ -51,6 +55,11 @@ var keyVaultSecretsUserRole = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
   '4633458b-17de-408a-b874-0445c86b69e6'
 ) // Key Vault Secrets User
+
+
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' existing = {
+  name: 'law-${appName}'
+}
 
 resource apiManagementService 'Microsoft.ApiManagement/service@2023-09-01-preview' = {
   name: apiManagementServiceName
@@ -83,10 +92,33 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     }
     tenantId: subscription().tenantId
     enableRbacAuthorization: true // Enforce RBAC
+    enablePurgeProtection: true // Enable purge protection
+    enableSoftDelete: true // Ensure soft delete is enabled
     networkAcls: {
       bypass: 'AzureServices'
       defaultAction: 'Deny' // Deny by default
     }
+  }
+}
+
+// Diagnostic setting for Key Vault to send logs to Log Analytics
+resource diagSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: '${keyVault.name}-diagnostic'
+  scope: keyVault
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'AuditEvent'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
   }
 }
 

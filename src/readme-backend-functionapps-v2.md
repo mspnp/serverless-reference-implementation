@@ -49,6 +49,8 @@ Compile the new API version
 
 ```bash
 cd DroneStatus/nodejs
+npm install
+npm run build
 func azure functionapp publish ${APPNAME}-dsv2-funcapp --typescript
 cd  ./../../
 
@@ -101,12 +103,14 @@ export FUNCTIONAPP_KEY_V2=<function-key-from-the-previous-step>
 
 az deployment group create \
    -g ${RESOURCEGROUP} \
-   --template-file azuredeploy-apim.json \
+   --template-file azuredeploy-apim.bicep \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
+           appName=${APPNAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}  \
            functionAppCodeV2=${FUNCTIONAPP_KEY_V2} \
-		     functionAppUrlV2=${FUNCTIONAPP_URL_V2}
+           functionAppUrlV2=${FUNCTIONAPP_URL_V2}
+
 ```
 
 ## step 7
@@ -144,7 +148,7 @@ export const getApiConfig = () =>
 ## step 9
 
 The ClientApp deploy need to be trigger again
-After checking the new version is deployed `$CLIENT_URL/semver.txt`, the new nodejs Azure Function is executed. 
+After checking the new version is deployed `$CLIENT_URL/semver.txt`, the new nodejs Azure Function is executed.
 You can check the url called from the Network developer tools (.../api/**v2**/dronestatus/drone-3)
 
 > Note: for this example, both versions of the function will represent the same resource so they will share the Microsoft Entra ID application id. Tokens retrieved to access the API will work for both versions.
