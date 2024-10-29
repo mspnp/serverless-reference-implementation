@@ -5,16 +5,11 @@ using Microsoft.Extensions.Logging;
 
 namespace DroneStatusFunctionApp
 {
-    public class GetStatusFunction
+    public class GetStatusFunction(ILogger<GetStatusFunction> logger)
     {
         public const string GetDeviceStatusRoleName = "GetStatus";
 
-        private readonly ILogger<GetStatusFunction> _logger;
-
-        public GetStatusFunction(ILogger<GetStatusFunction> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<GetStatusFunction> _logger = logger;
 
         [Function("GetStatusFunction")]
         public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req,

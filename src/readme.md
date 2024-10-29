@@ -55,7 +55,8 @@ az deployment group create \
    --parameters appName=${APPNAME} \
    appInsightsLocation=${APP_INSIGHTS_LOCATION} \
    cosmosDatabaseName=${COSMOSDB_DATABASE_NAME} \
-   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}
+   cosmosDatabaseCollection=${COSMOSDB_DATABASE_COL}  \
+   userObjectId=$(az ad signed-in-user show --query id --output tsv)
 ```
 
 Create Cosmos DB database and collection. This resource is one of the most expensive, in order to take care the cost in the current reference implementation the container has throughput set to autoscale with a maximum 5000 throughput unites, this would be enough for the current example. In production, the configuration need to be appropriate to process the telemetry. 
@@ -133,11 +134,12 @@ export FUNCTIONAPP_KEY=<function-key-from-the-previous-step>
 
 export FUNCTIONAPP_URL="https://$(az functionapp show -g ${RESOURCEGROUP} -n ${DRONE_STATUS_FUNCTION_APP_NAME} --query defaultHostName -o tsv)/api"
 
-# This takes more than 1hs to execute
+# This process takes more than one hour to complete. If an error occurs due to propagation time, running the script again should resolve the issue.
 az deployment group create \
    -g ${RESOURCEGROUP} \
-   --template-file azuredeploy-apim.json \
+   --template-file azuredeploy-apim.bicep \
    --parameters functionAppNameV1=${DRONE_STATUS_FUNCTION_APP_NAME} \
+           appName=${APPNAME} \
            functionAppCodeV1=${FUNCTIONAPP_KEY} \
            functionAppUrlV1=${FUNCTIONAPP_URL}
 ```
@@ -150,13 +152,8 @@ export EH_NAMESPACE=$(az eventhubs namespace list \
      -g $RESOURCEGROUP \
      --query '[].name' --output tsv)
 
-# list the send keys
-export EVENT_HUB_CONNECTION_STRING=$(az eventhubs eventhub authorization-rule keys list \
-     -g $RESOURCEGROUP \
-     --eventhub-name $APPNAME-eh  \
-     --namespace-name $EH_NAMESPACE \
-     --name send \
-     --query primaryConnectionString --output tsv)
+export FUllY_QUALIFIED_NAMESPACE="${EH_NAMESPACE}.servicebus.windows.net"
+export EVENT_HUB_NAME=$APPNAME-eh
 
 export SIMULATOR_PROJECT_PATH=DroneSimulator/Serverless.Simulator/Serverless.Simulator.csproj
 
@@ -165,7 +162,7 @@ dotnet run --project $SIMULATOR_PROJECT_PATH
 ```
 
 The simulator sends data to Event Hubs, which triggers the drone telemetry function app. You can verify the function app is working by viewing the logs in the Azure portal. Navigate to the `dronetelemetry` function app resource, select **RawTelemetryFunction**, expand the **Monitor** tab, and click on any of the logs.
-Also, you can see the database, which will be populated by the drone status.
+Also, you can see the database, which will be populated by the drone status. To see the data, in Azure Cosmos DB account -> Networking, you need to add your current IP.
 
 ## Enable authentication in the function app
 

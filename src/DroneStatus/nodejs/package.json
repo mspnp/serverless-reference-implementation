@@ -12,8 +12,9 @@
   },
   "dependencies": {
     "@azure/cosmos": "^4.0.0",
-    "@azure/functions": "^4.4.0",
-    "undici": "^3.3.6"
+    "@azure/functions": "^4.5.1",
+    "@azure/identity": "^4.4.1",
+    "undici": "^5.28.4"
   },
   "devDependencies": {
     "@types/node": "^18.x",
