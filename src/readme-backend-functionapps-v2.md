@@ -124,7 +124,7 @@ export API_MANAGEMENT_SERVICE=$(az deployment group show \
                                     --query properties.outputs.apimGatewayServiceName.value \
                                     --output tsv)
 export API_POLICY_ID_V2="$(az resource show --resource-group $RESOURCEGROUP --resource-type Microsoft.ApiManagement/service --name $API_MANAGEMENT_SERVICE --query id --output tsv)/apis/dronedeliveryapiv2/policies/policy"
-az resource create --id $API_POLICY_ID_V2 \
+az resource create --id $API_POLICY_ID_V2  --api-version 2023-09-01-preview  \
     --properties "{
         \"value\": \"<policies><inbound><base /><cors allow-credentials=\\\"true\\\"><allowed-origins><origin>$CLIENT_URL</origin></allowed-origins><allowed-methods><method>GET</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors><validate-jwt header-name=\\\"Authorization\\\" failed-validation-httpcode=\\\"401\\\" failed-validation-error-message=\\\"Unauthorized. Access token is missing or invalid.\\\"><openid-config url=\\\"${ISSUER_URL}.well-known/openid-configuration\\\" /><required-claims><claim name=\\\"aud\\\"><value>$IDENTIFIER_URI</value></claim></required-claims></validate-jwt></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>\"
     }"

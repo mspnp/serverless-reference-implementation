@@ -25,7 +25,7 @@ namespace DroneStatusFunctionApp
             var principal = ClaimsPrincipalParser.Parse(req);
             if (principal == null || !principal.IsAuthorizedByRoles([GetDeviceStatusRoleName], _logger))
             {
-                return new UnauthorizedResult();
+               return new UnauthorizedResult();
             }
 
             string? deviceId = req.Query["deviceId"];
